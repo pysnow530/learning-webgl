@@ -5,13 +5,43 @@
     <title>learning webgl</title>
 </head>
 <body onload="main()">
-<canvas id="glcanvas" width="300" height="300"></canvas>
+<canvas id="WebGL" width="300" height="300"></canvas>
 <script>
     function main() {
-        const canvas = document.querySelector("#glcanvas")
+        const canvas = document.querySelector("#WebGL")
         const gl = canvas.getContext('webgl')
+
+        const vertexShaderSrc = `
+        void main() {
+            gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+            gl_PointSize = 10.0;
+        }
+        `
+
+        const fragmentShaderSrc = `
+        void main() {
+            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+        `
+
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER)
+        gl.shaderSource(vertexShader, vertexShaderSrc)
+        gl.compileShader(vertexShader)
+
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+        gl.shaderSource(fragmentShader, fragmentShaderSrc)
+        gl.compileShader(fragmentShader)
+
+        const shaderProgram = gl.createProgram()
+        gl.attachShader(shaderProgram, vertexShader)
+        gl.attachShader(shaderProgram, fragmentShader)
+        gl.linkProgram(shaderProgram)
+        gl.useProgram(shaderProgram)
+
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
+
+        gl.drawArrays(gl.POINTS, 0, 1)
     }
 </script>
 </body>
