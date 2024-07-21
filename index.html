@@ -12,15 +12,18 @@
         const gl = canvas.getContext('webgl')
 
         const vertexShaderSrc = `
+        attribute vec4 a_Position;
         void main() {
-            gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+            gl_Position = a_Position;
             gl_PointSize = 10.0;
         }
         `
 
         const fragmentShaderSrc = `
+        precision mediump float;
+        uniform vec4 u_FragColor;
         void main() {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            gl_FragColor = u_FragColor;
         }
         `
 
@@ -41,7 +44,31 @@
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
 
-        gl.drawArrays(gl.POINTS, 0, 1)
+        let positions = []
+
+        canvas.onmousemove = (ev) => {
+            gl.clearColor(0, 0, 0, 1)
+            gl.clear(gl.COLOR_BUFFER_BIT)
+
+            let x = ev.clientX
+            let y = ev.clientY
+            const rect = ev.target.getBoundingClientRect()
+            x = (x - (rect.left + rect.width / 2)) / (rect.width / 2)
+            y = -(y - (rect.top + rect.height / 2)) / (rect.height / 2)
+            positions.push([x, y])
+
+            positions.map(position => {
+                gl.vertexAttrib4f(
+                    gl.getAttribLocation(shaderProgram, 'a_Position'),
+                    position[0], position[1], 0.0, 1.0)
+                gl.uniform4f(
+                    gl.getUniformLocation(shaderProgram, 'u_FragColor'),
+                    (position[0] + 1) / 2, (position[1] + 1) / 2, 0.0, 1.0
+                )
+                gl.drawArrays(gl.POINTS, 0, 1)
+            })
+
+        }
     }
 </script>
 </body>
