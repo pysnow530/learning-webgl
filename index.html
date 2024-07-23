@@ -74,15 +74,27 @@
             0, 0, 0, 1
         ])
 
-        // 注入变换矩阵
-        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformTranslate'), false, translateMatrix(0.5, 0.5, 0))
-        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformRotate'), false, rotateMatrix(Math.PI / 3))
-        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformScale'), false, scaleMatrix(0.5, 0.5, 0.5))
+        const update = () => {
+            const loopTime = (Date.now() % 2000) / 2000 // 2秒一个循环
 
-        // 画图
-        gl.clearColor(0, 0, 0, 1)
-        gl.clear(gl.COLOR_BUFFER_BIT)
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, 5)
+            // 注入变换矩阵
+            if (loopTime <= 0.5) { // 前一秒应用位移、缩放
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformTranslate'), false, translateMatrix(0.5 * loopTime * 2, 0.5 * loopTime * 2, 0))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformScale'), false, scaleMatrix(1 - loopTime, 1 - loopTime, 1 - loopTime))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformRotate'), false, rotateMatrix(0))
+            } else { // 后一秒应用旋转
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformTranslate'), false, translateMatrix(0.5, 0.5, 0))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformScale'), false, scaleMatrix(0.5, 0.5, 0.5))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformRotate'), false, rotateMatrix((loopTime * 2 - 1) * Math.PI * 2))
+            }
+
+            // 画图
+            gl.clearColor(0, 0, 0, 1)
+            gl.clear(gl.COLOR_BUFFER_BIT)
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 5)
+        }
+
+        setInterval(update, 1000 / 60)
     }
 </script>
 </body>
