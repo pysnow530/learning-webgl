@@ -27,10 +27,12 @@
         }
         `
 
+        // 顶点着色器
         const vertexShader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(vertexShader, vertexShaderSrc)
         gl.compileShader(vertexShader)
 
+        // 片元着色器
         const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
         gl.shaderSource(fragmentShader, fragmentShaderSrc)
         gl.compileShader(fragmentShader)
@@ -41,33 +43,36 @@
         gl.linkProgram(shaderProgram)
         gl.useProgram(shaderProgram)
 
+        // 绘制颜色默认红色
+        gl.uniform4f(gl.getUniformLocation(shaderProgram, 'u_FragColor'), 1, 0, 0, 1)
+
+        // 创建缓冲区，存储三角形三个点的位置
+        // Q: 一次画多个点一定要使用buffer吗？
+        // A: 目前从《webgl编程指南》第三章来看，是的 @2024-07-23
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0.5, -0.5, 0, 0.5]), gl.STATIC_DRAW)
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+        gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_Position'))
+
+        // 画三角形
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT)
+        gl.drawArrays(gl.POINTS, 0, 3)
 
         let positions = []
-
         canvas.onmousemove = (ev) => {
-            gl.clearColor(0, 0, 0, 1)
-            gl.clear(gl.COLOR_BUFFER_BIT)
-
-            let x = ev.clientX
-            let y = ev.clientY
+            // 计算canvas webgl空间对应的x、y
             const rect = ev.target.getBoundingClientRect()
-            x = (x - (rect.left + rect.width / 2)) / (rect.width / 2)
-            y = -(y - (rect.top + rect.height / 2)) / (rect.height / 2)
-            positions.push([x, y])
+            let x = (ev.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
+            let y = -(ev.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
+            positions.push(x)
+            positions.push(y)
 
-            positions.map(position => {
-                gl.vertexAttrib4f(
-                    gl.getAttribLocation(shaderProgram, 'a_Position'),
-                    position[0], position[1], 0.0, 1.0)
-                gl.uniform4f(
-                    gl.getUniformLocation(shaderProgram, 'u_FragColor'),
-                    (position[0] + 1) / 2, (position[1] + 1) / 2, 0.0, 1.0
-                )
-                gl.drawArrays(gl.POINTS, 0, 1)
-            })
-
+            // 缓存最新数据，并重绘canvas
+            gl.clear(gl.COLOR_BUFFER_BIT)
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+            gl.drawArrays(gl.POINTS, 0, positions.length / 2)
         }
     }
 </script>
