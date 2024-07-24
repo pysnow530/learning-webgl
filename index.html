@@ -123,7 +123,14 @@
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 5)
         }
 
-        setInterval(update, 1000 / 60)
+        const gameLoop = () => {
+            requestAnimationFrame(() => {
+                update()
+                gameLoop()
+            })
+        }
+
+        gameLoop()
     }
 </script>
 </body>
