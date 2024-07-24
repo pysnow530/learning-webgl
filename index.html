@@ -12,12 +12,10 @@
         const gl = canvas.getContext('webgl')
 
         const vertexShaderSrc = `
-        uniform mat4 u_TransformRotate;
-        uniform mat4 u_TransformScale;
-        uniform mat4 u_TransformTranslate;
+        uniform mat4 u_ModelMatrix;
         attribute vec4 a_Position;
         void main() {
-            gl_Position = u_TransformTranslate * u_TransformRotate * u_TransformScale * a_Position;
+            gl_Position = u_ModelMatrix * a_Position;
         }
         `
 
@@ -53,39 +51,70 @@
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
         gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_Position'))
 
-        // 变换矩阵（平移、旋转、缩放）
-        // NOTE: Float32Array转换到webgl是列式存储
-        const translateMatrix = (x, y, z) => new Float32Array([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            x, y, z, 1
-        ])
-        const rotateMatrix = (angle) => new Float32Array([
-            Math.cos(angle), Math.sin(angle), 0, 0,
-            -Math.sin(angle), Math.cos(angle), 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ])
-        const scaleMatrix = (x, y, z) => new Float32Array([
-            x, 0, 0, 0,
-            0, y, 0, 0,
-            0, 0, z, 0,
-            0, 0, 0, 1
-        ])
+        class Mat4 extends Float32Array {
+            constructor(list) {
+                super(list)
+            }
+
+            static ONE() {
+                return new Mat4([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+            }
+
+            T() {
+                return new Mat4([
+                    this[0], this[4], this[8], this[12],
+                    this[1], this[5], this[9], this[13],
+                    this[2], this[6], this[10], this[14],
+                    this[3], this[7], this[11], this[15]
+                ])
+            }
+
+            mul(other) {
+                const list = []
+                for (let row = 0; row < 4; row++)
+                    for (let col = 0; col < 4; col++)
+                        list.push([0, 1, 2, 3].map(i => this[row * 4 + i] * other[i * 4 + col]).reduce((x, y) => x + y, 0))
+                return new Mat4(list)
+            }
+
+            static TRANSLATE(x, y, z) {
+                return new Mat4([
+                    1, 0, 0, x,
+                    0, 1, 0, y,
+                    0, 0, 1, z,
+                    0, 0, 0, 1,
+                ])
+            }
+
+            static ROTATE(angle) {
+                return new Mat4([
+                    Math.cos(angle), -Math.sin(angle), 0, 0,
+                    Math.sin(angle), Math.cos(angle), 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1,
+                ])
+            }
+
+            static SCALE(x, y, z) {
+                return new Mat4([
+                    x, 0, 0, 0,
+                    0, y, 0, 0,
+                    0, 0, z, 0,
+                    0, 0, 0, 1,
+                ])
+            }
+        }
 
         const update = () => {
             const loopTime = (Date.now() % 2000) / 2000 // 2秒一个循环
 
             // 注入变换矩阵
             if (loopTime <= 0.5) { // 前一秒应用位移、缩放
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformTranslate'), false, translateMatrix(0.5 * loopTime * 2, 0.5 * loopTime * 2, 0))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformScale'), false, scaleMatrix(1 - loopTime, 1 - loopTime, 1 - loopTime))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformRotate'), false, rotateMatrix(0))
+                const mat = Mat4.TRANSLATE(0.5 * loopTime * 2, 0.5 * loopTime * 2, 0).mul(Mat4.SCALE(1 - loopTime, 1 - loopTime, 1 - loopTime))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_ModelMatrix'), false, mat.T())
             } else { // 后一秒应用旋转
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformTranslate'), false, translateMatrix(0.5, 0.5, 0))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformScale'), false, scaleMatrix(0.5, 0.5, 0.5))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_TransformRotate'), false, rotateMatrix((loopTime * 2 - 1) * Math.PI * 2))
+                const mat = Mat4.TRANSLATE(0.5, 0.5, 0).mul(Mat4.SCALE(0.5, 0.5, 0.5)).mul(Mat4.ROTATE((loopTime * 2 - 1) * Math.PI * 2))
+                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_ModelMatrix'), false, mat.T())
             }
 
             // 画图
