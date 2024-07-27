@@ -5,7 +5,7 @@
     <title>learning webgl</title>
 </head>
 <body onload="main()">
-<canvas id="WebGL" width="300" height="300"></canvas>
+<canvas id="WebGL" width="500" height="500"></canvas>
 <script>
     function main() {
         const canvas = document.querySelector("#WebGL")
@@ -33,13 +33,15 @@
         const vertexShader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(vertexShader, vertexShaderSrc)
         gl.compileShader(vertexShader)
-        console.log(gl.getShaderInfoLog(vertexShader))
+        const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
+        console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
 
         // 片元着色器
         const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
         gl.shaderSource(fragmentShader, fragmentShaderSrc)
         gl.compileShader(fragmentShader)
-        console.log(gl.getShaderInfoLog(fragmentShader))
+        const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
+        console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
 
         const shaderProgram = gl.createProgram()
         gl.attachShader(shaderProgram, vertexShader)
@@ -65,7 +67,7 @@
         const bytesPerElement = data.BYTES_PER_ELEMENT
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, bytesPerElement * 5, 0)
         gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_Position'))
-        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, bytesPerElement * 5, bytesPerElement * 2)
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, bytesPerElement * 5, bytesPerElement * 2)
         gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_FragColor'))
 
         // 画图
