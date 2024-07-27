@@ -12,16 +12,20 @@
         const gl = canvas.getContext('webgl')
 
         const vertexShaderSrc = `
-        uniform mat4 u_ModelMatrix;
         attribute vec4 a_Position;
+        attribute vec4 a_FragColor;
+        varying vec4 v_FragColor;
         void main() {
-            gl_Position = u_ModelMatrix * a_Position;
+            gl_Position = a_Position;
+            v_FragColor = a_FragColor;
         }
         `
 
         const fragmentShaderSrc = `
+        precision mediump float;
+        varying vec4 v_FragColor;
         void main() {
-            gl_FragColor = vec4(0.8, 0, 0, 1); // 绘制颜色默认红色
+            gl_FragColor = v_FragColor;
         }
         `
 
@@ -29,11 +33,13 @@
         const vertexShader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(vertexShader, vertexShaderSrc)
         gl.compileShader(vertexShader)
+        console.log(gl.getShaderInfoLog(vertexShader))
 
         // 片元着色器
         const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
         gl.shaderSource(fragmentShader, fragmentShaderSrc)
         gl.compileShader(fragmentShader)
+        console.log(gl.getShaderInfoLog(fragmentShader))
 
         const shaderProgram = gl.createProgram()
         gl.attachShader(shaderProgram, vertexShader)
@@ -44,93 +50,28 @@
         // 创建缓冲区，存储红飘带的位置
         // Q: 一次画多个点一定要使用buffer吗？
         // A: 目前从《webgl编程指南》第三章来看，是的 @2024-07-23
-        const data = new Float32Array([0, 0, 0.2, -0.5, 0.2, 0.5, -0.2, 0.5, -0.2, -0.5])
+        const data = new Float32Array([
+            0, 0, 1, 0, 0,
+            0.2, -0.5, 0, 1, 0,
+            0.2, 0.5, 0, 0, 1,
+            -0.2, 0.5, 1, 1, 0,
+            -0.2, -0.5, 0, 1, 1,
+        ])
         const buffer = gl.createBuffer()
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
-        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+
+        // 将缓存写入两个输出
+        const bytesPerElement = data.BYTES_PER_ELEMENT
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, bytesPerElement * 5, 0)
         gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_Position'))
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, bytesPerElement * 5, bytesPerElement * 2)
+        gl.enableVertexAttribArray(gl.getAttribLocation(shaderProgram, 'a_FragColor'))
 
-        class Mat4 extends Float32Array {
-            constructor(list) {
-                super(list)
-            }
-
-            static ONE() {
-                return new Mat4([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
-            }
-
-            T() {
-                return new Mat4([
-                    this[0], this[4], this[8], this[12],
-                    this[1], this[5], this[9], this[13],
-                    this[2], this[6], this[10], this[14],
-                    this[3], this[7], this[11], this[15]
-                ])
-            }
-
-            mul(other) {
-                const list = []
-                for (let row = 0; row < 4; row++)
-                    for (let col = 0; col < 4; col++)
-                        list.push([0, 1, 2, 3].map(i => this[row * 4 + i] * other[i * 4 + col]).reduce((x, y) => x + y, 0))
-                return new Mat4(list)
-            }
-
-            static TRANSLATE(x, y, z) {
-                return new Mat4([
-                    1, 0, 0, x,
-                    0, 1, 0, y,
-                    0, 0, 1, z,
-                    0, 0, 0, 1,
-                ])
-            }
-
-            static ROTATE(angle) {
-                return new Mat4([
-                    Math.cos(angle), -Math.sin(angle), 0, 0,
-                    Math.sin(angle), Math.cos(angle), 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1,
-                ])
-            }
-
-            static SCALE(x, y, z) {
-                return new Mat4([
-                    x, 0, 0, 0,
-                    0, y, 0, 0,
-                    0, 0, z, 0,
-                    0, 0, 0, 1,
-                ])
-            }
-        }
-
-        const update = () => {
-            const loopTime = (Date.now() % 2000) / 2000 // 2秒一个循环
-
-            // 注入变换矩阵
-            if (loopTime <= 0.5) { // 前一秒应用位移、缩放
-                const mat = Mat4.TRANSLATE(0.5 * loopTime * 2, 0.5 * loopTime * 2, 0).mul(Mat4.SCALE(1 - loopTime, 1 - loopTime, 1 - loopTime))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_ModelMatrix'), false, mat.T())
-            } else { // 后一秒应用旋转
-                const mat = Mat4.TRANSLATE(0.5, 0.5, 0).mul(Mat4.SCALE(0.5, 0.5, 0.5)).mul(Mat4.ROTATE((loopTime * 2 - 1) * Math.PI * 2))
-                gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_ModelMatrix'), false, mat.T())
-            }
-
-            // 画图
-            gl.clearColor(0, 0, 0, 1)
-            gl.clear(gl.COLOR_BUFFER_BIT)
-            gl.drawArrays(gl.TRIANGLE_FAN, 0, 5)
-        }
-
-        const gameLoop = () => {
-            requestAnimationFrame(() => {
-                update()
-                gameLoop()
-            })
-        }
-
-        gameLoop()
+        // 画图
+        gl.clearColor(0, 0, 0, 1)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        gl.drawArrays(gl.TRIANGLE_FAN, 0, 5)
     }
 </script>
 </body>
