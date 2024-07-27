@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <title>learning webgl</title>
 </head>
-<body onload="main()">
+<body>
 <canvas id="WebGL" width="500" height="500"></canvas>
 <script>
-    function main() {
-        const canvas = document.querySelector("#WebGL")
-        const gl = canvas.getContext('webgl')
+    const canvas = document.querySelector("#WebGL")
+    const gl = canvas.getContext('webgl')
 
-        const vertexShaderSrc = `
+    const vertexShaderSrc = `
         attribute vec4 a_Position;
         attribute vec2 a_TexCoord;
         varying vec2 v_TexCoord;
@@ -21,76 +20,75 @@
         }
         `
 
-        const fragmentShaderSrc = `
+    const fragmentShaderSrc = `
         precision mediump float;
         varying vec2 v_TexCoord;
         uniform sampler2D u_Sampler;
         void main() {
             gl_FragColor = texture2D(u_Sampler, v_TexCoord);
-            // gl_FragColor = vec4(1, 0, 0, 1);
+            // gl_FragColor = vec4(v_TexCoord.x, v_TexCoord.y, 0, 1);
         }
         `
 
-        // 顶点着色器
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER)
-        gl.shaderSource(vertexShader, vertexShaderSrc)
-        gl.compileShader(vertexShader)
-        const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
-        console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
+    // 顶点着色器
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER)
+    gl.shaderSource(vertexShader, vertexShaderSrc)
+    gl.compileShader(vertexShader)
+    const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
+    console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
 
-        // 片元着色器
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
-        gl.shaderSource(fragmentShader, fragmentShaderSrc)
-        gl.compileShader(fragmentShader)
-        const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
-        console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
+    // 片元着色器
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+    gl.shaderSource(fragmentShader, fragmentShaderSrc)
+    gl.compileShader(fragmentShader)
+    const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
+    console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
 
-        const shaderProgram = gl.createProgram()
-        gl.attachShader(shaderProgram, vertexShader)
-        gl.attachShader(shaderProgram, fragmentShader)
-        gl.linkProgram(shaderProgram)
-        gl.useProgram(shaderProgram)
+    const shaderProgram = gl.createProgram()
+    gl.attachShader(shaderProgram, vertexShader)
+    gl.attachShader(shaderProgram, fragmentShader)
+    gl.linkProgram(shaderProgram)
+    gl.useProgram(shaderProgram)
 
-        // 创建缓冲区，存储红飘带的位置
-        // Q: 一次画多个点一定要使用buffer吗？
-        // A: 目前从《webgl编程指南》第三章来看，是的 @2024-07-23
-        const data = new Float32Array([
-            -0.5, 0.5, 0, 1,
-            -0.5, -0.5, 0, 0,
-            0.5, 0.5, 1, 1,
-            0.5, -0.5, 1, 0,
-        ])
-        const buffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+    // 创建缓冲区，存储红飘带的位置
+    // Q: 一次画多个点一定要使用buffer吗？
+    // A: 目前从《webgl编程指南》第三章来看，是的 @2024-07-23
+    const data = new Float32Array([
+        -0.7, 0.7, 0, 1,
+        -0.7, -0.7, 0, 0,
+        0.7, 0.7, 1, 1,
+        0.7, -0.7, 1, 0,
+    ])
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
 
-        // 将缓存写入两个输出
-        const bytesPerElement = data.BYTES_PER_ELEMENT
-        const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
-        gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, bytesPerElement * 4, 0)
-        gl.enableVertexAttribArray(a_Position)
-        const a_TexCoord = gl.getAttribLocation(shaderProgram, 'a_TexCoord')
-        gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, bytesPerElement * 4, bytesPerElement * 2)
-        gl.enableVertexAttribArray(a_TexCoord)
+    // 将缓存写入两个输出
+    const bytesPerElement = data.BYTES_PER_ELEMENT
+    const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
+    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, bytesPerElement * 4, 0)
+    gl.enableVertexAttribArray(a_Position)
+    const a_TexCoord = gl.getAttribLocation(shaderProgram, 'a_TexCoord')
+    gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, bytesPerElement * 4, bytesPerElement * 2)
+    gl.enableVertexAttribArray(a_TexCoord)
 
-        const image = new Image()
-        image.onload = () => {
-            // 将图片绑定到TEXTURE0，并传递到着色器
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
-            gl.activeTexture(gl.TEXTURE0)
-            const texture = gl.createTexture()
-            gl.bindTexture(gl.TEXTURE_2D, texture)
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
-            gl.uniform1i(gl.getUniformLocation(shaderProgram, 'u_Sampler'), 0)
+    const image = new Image()
+    image.onload = () => {
+        // 将图片绑定到TEXTURE0，并传递到着色器
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+        gl.activeTexture(gl.TEXTURE0)
+        const texture = gl.createTexture()
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
+        gl.uniform1i(gl.getUniformLocation(shaderProgram, 'u_Sampler'), 0)
 
-            // 画图
-            gl.clearColor(0, 0, 0, 1)
-            gl.clear(gl.COLOR_BUFFER_BIT)
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-        }
-        image.src = './snow-afternoon.jpg'
+        // 画图
+        gl.clearColor(0, 0, 0, 1)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     }
+    image.src = './snow-afternoon.jpg'
 </script>
 </body>
 </html>
