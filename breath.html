@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>learning webgl</title>
+</head>
+<body>
+<canvas id="WebGL" width="200" height="200"></canvas>
+<script>
+    const canvas = document.querySelector("#WebGL")
+    const gl = canvas.getContext('webgl')
+
+    const vertexShaderSrc = `
+        attribute vec4 a_Position;
+        varying vec4 v_Position;
+        void main() {
+            gl_Position = a_Position;
+            v_Position = a_Position;
+        }
+        `
+
+    const fragmentShaderSrc = `
+        precision mediump float;
+        uniform int u_Timestamp;
+        varying vec4 v_Position;
+        void main() {
+            gl_FragColor = vec4(0, abs(sin(float(u_Timestamp) / 1000.0)), 0, 1);
+        }
+        `
+
+    // 顶点着色器
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER)
+    gl.shaderSource(vertexShader, vertexShaderSrc)
+    gl.compileShader(vertexShader)
+    const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
+    console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
+
+    // 片元着色器
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+    gl.shaderSource(fragmentShader, fragmentShaderSrc)
+    gl.compileShader(fragmentShader)
+    const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
+    console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
+
+    const shaderProgram = gl.createProgram()
+    gl.attachShader(shaderProgram, vertexShader)
+    gl.attachShader(shaderProgram, fragmentShader)
+    gl.linkProgram(shaderProgram)
+    gl.useProgram(shaderProgram)
+
+    const data = new Float32Array([
+        -1, 1,
+        -1, -1,
+        1, -1,
+        1, 1,
+    ])
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+
+    // 将缓存写入两个输出
+    const bytesPerElement = data.BYTES_PER_ELEMENT
+    const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
+    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, bytesPerElement * 2, 0)
+    gl.enableVertexAttribArray(a_Position)
+
+    // 画图
+    const update = () => {
+        const ts = Date.now() - 1722339617752
+        gl.uniform1i(gl.getUniformLocation(shaderProgram, 'u_Timestamp'), ts)
+        gl.clearColor(0, 0, 0, 1)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
+        requestAnimationFrame(update)
+    }
+    requestAnimationFrame(update)
+</script>
+</body>
+</html>
