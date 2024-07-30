@@ -3,30 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>learning webgl</title>
+    <script src="lib/structs.js"></script>
 </head>
 <body>
-<canvas id="WebGL" width="500" height="500"></canvas>
+<canvas id="WebGL" width="200" height="200"></canvas>
 <script>
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
     const vertexShaderSrc = `
         attribute vec4 a_Position;
-        attribute vec2 a_TexCoord;
-        varying vec2 v_TexCoord;
+        varying vec4 v_Position;
+        uniform mat4 u_MVP;
         void main() {
-            gl_Position = a_Position;
-            v_TexCoord = a_TexCoord;
+            gl_Position = u_MVP * a_Position;
+            v_Position = a_Position;
         }
         `
 
     const fragmentShaderSrc = `
         precision mediump float;
-        varying vec2 v_TexCoord;
-        uniform sampler2D u_Sampler;
-        uniform sampler2D u_Sampler2;
+        varying vec4 v_Position;
         void main() {
-            gl_FragColor = texture2D(u_Sampler, v_TexCoord) * (texture2D(u_Sampler2, v_TexCoord));
+            gl_FragColor = vec4(0.7, 0, 0, 1);
         }
         `
 
@@ -50,56 +49,35 @@
     gl.linkProgram(shaderProgram)
     gl.useProgram(shaderProgram)
 
-    // 创建缓冲区，存储红飘带的位置
-    // Q: 一次画多个点一定要使用buffer吗？
-    // A: 目前从《webgl编程指南》第三章来看，是的 @2024-07-23
+    // 顶点坐标
     const data = new Float32Array([
-        -0.7, 0.7, 0, 1,
-        -0.7, -0.7, 0, 0,
-        0.7, 0.7, 1, 1,
-        0.7, -0.7, 1, 0,
+        -0.5, 0.5, 0,
+        -0.5, -0.5, 0,
+        0.5, -0.5, 0,
+        0.5, 0.5, 0,
     ])
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
-
-    // 将缓存写入两个输出
     const bytesPerElement = data.BYTES_PER_ELEMENT
     const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
-    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, bytesPerElement * 4, 0)
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 3, 0)
     gl.enableVertexAttribArray(a_Position)
-    const a_TexCoord = gl.getAttribLocation(shaderProgram, 'a_TexCoord')
-    gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, bytesPerElement * 4, bytesPerElement * 2)
-    gl.enableVertexAttribArray(a_TexCoord)
 
-    let loadedImage = 0
+    // MVP变换矩阵
+    // ViewMatrix验证思路：
+    // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
+    // 2. (0, 1, 0), (0, 0, 0) 时， 方块仍位于Canvas中心，形状为长方形 [FAILED]
+    // 3. (1, 1, 1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
+    const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
+    // const mvp = Mat4.ViewMatrix(new Vec3(0, 1, 0), new Vec3(0, 0, 0))
+    // const mvp = Mat4.ViewMatrix(new Vec3(1, 1, 1), new Vec3(0, 0, 0))
+    gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
 
-    const imageLoaded = (index, image) => {
-        // 将图片绑定到TEXTURE0，并传递到着色器
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
-        gl.activeTexture([gl.TEXTURE0, gl.TEXTURE1][index])
-        const texture = gl.createTexture()
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
-        gl.uniform1i(gl.getUniformLocation(shaderProgram, ['u_Sampler', 'u_Sampler2'][index]), index)
-
-        loadedImage += 1
-        if (loadedImage === 2) {
-            // 画图
-            gl.clearColor(0, 0, 0, 1)
-            gl.clear(gl.COLOR_BUFFER_BIT)
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-        }
-    }
-
-    const image = new Image()
-    image.onload = () => imageLoaded(0, image)
-    image.src = './snow-afternoon.jpg'
-
-    const image2 = new Image()
-    image2.onload = () => imageLoaded(1, image2)
-    image2.src = './frame.gif'
+    // 画图
+    gl.clearColor(0, 0, 0, 1)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
 </script>
 </body>
 </html>
