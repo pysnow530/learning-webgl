@@ -67,11 +67,11 @@
     // MVP变换矩阵
     // ViewMatrix验证思路：
     // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
-    // 2. (0, 1, 0), (0, 0, 0) 时， 方块仍位于Canvas中心，形状为长方形 [FAILED]
-    // 3. (1, 1, 1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
+    // 2. (0, .1, .1), (0, 0, 0) 时， 方块仍位于Canvas中心，形状为长方形 [FAILED]
+    // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
     // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
-    const mvp = Mat4.ViewMatrix(new Vec3(0, .1, 0), new Vec3(0, 0, 0))
-    // const mvp = Mat4.ViewMatrix(new Vec3(1, 1, 1), new Vec3(0, 0, 0))
+    // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
+    const mvp = Mat4.ViewMatrix(new Vec3(.1, .1, .1), new Vec3(0, 0, 0))
     gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
 
     // 画图
