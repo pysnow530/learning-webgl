@@ -25,7 +25,7 @@
         precision mediump float;
         varying vec4 v_Position;
         void main() {
-            gl_FragColor = vec4(0.7, 0, 0, 1);
+            gl_FragColor = v_Position;
         }
         `
 
@@ -74,6 +74,30 @@
         -1, 1, -1,
         -1, 1, 1,
         1, 1, -1,
+
+        // 底面
+        1, -1, 1,
+        -1, -1, 1,
+        1, -1, -1,
+        -1, -1, -1,
+        -1, -1, 1,
+        1, -1, -1,
+
+        // 后面
+        1, 1, -1,
+        -1, 1, -1,
+        1, -1, -1,
+        -1, -1, -1,
+        -1, 1, -1,
+        1, -1, -1,
+
+        // 左面
+        -1, 1, 1,
+        -1, -1, 1,
+        -1, 1, -1,
+        -1, -1, -1,
+        -1, -1, 1,
+        -1, 1, -1,
     ])
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
