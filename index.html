@@ -7,7 +7,11 @@
 </head>
 <body style="background-color: gray">
 <canvas id="WebGL" width="1024" height="768"></canvas>
-NOTE: 方向键控制摄像机的x、y轴
+NOTE:
+<ol>
+    <li>方向键控制摄像机的x、y轴</li>
+    <li>wasd移动相机视角目标点</li>
+</ol>
 <script>
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
@@ -110,7 +114,7 @@ NOTE: 方向键控制摄像机的x、y轴
     gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 3, 0)
     gl.enableVertexAttribArray(a_Position)
 
-    const draw = (x, y) => {
+    const draw = (x, y, lookAtX, lookAtY) => {
         // MVP变换矩阵
         // ViewMatrix验证思路：
         // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
@@ -118,7 +122,7 @@ NOTE: 方向键控制摄像机的x、y轴
         // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
         // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
         // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
-        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, 5), new Vec3(0, 0, 0))
+        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, 5), new Vec3(lookAtX, lookAtY, 0))
         // FIXED: near大于0时，颜色有干扰
         // FIXED: 相机aspect不是1:1时，正方体显示异常
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
@@ -134,10 +138,13 @@ NOTE: 方向键控制摄像机的x、y轴
 
     let x = 0
     let y = 0
-    draw(x, y)
+    let lookAtX = 0
+    let lookAtY = 0
+    draw(x, y, lookAtX, lookAtY)
 
     document.onkeydown = (ev) => {
         const step = 0.5
+        console.log(ev.key)
         if (ev.key === 'ArrowLeft') {
             x -= step
         } else if (ev.key === 'ArrowRight') {
@@ -146,8 +153,16 @@ NOTE: 方向键控制摄像机的x、y轴
             y -= step
         } else if (ev.key === 'ArrowUp') {
             y += step
+        } else if (ev.key === 'a') {
+            lookAtX -= step
+        } else if (ev.key === 's') {
+            lookAtY -= step
+        } else if (ev.key === 'd') {
+            lookAtX += step
+        } else if (ev.key === 'w') {
+            lookAtY += step
         }
-        draw(x, y)
+        draw(x, y, lookAtX, lookAtY)
     }
 </script>
 </body>
