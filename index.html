@@ -117,10 +117,10 @@
         // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
         // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
         // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
-        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, 10), new Vec3(0, 0, 0))
+        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, 5), new Vec3(0, 0, 0))
         // FIXME: near大于0时，颜色有干扰
-        // FIXME: 相机aspect不是1:1时，正方体显示异常
-        const projMatrix = Mat4.ProjMatrix(1024 / 768, 80 / 180 * Math.PI, 0, 100)
+        // FIXED: 相机aspect不是1:1时，正方体显示异常
+        const projMatrix = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, 0, 100)
         const mvp = projMatrix.mul(viewMatrix)
         gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
 
@@ -136,7 +136,7 @@
     draw(x, y)
 
     document.onkeydown = (ev) => {
-        const step = 0.05
+        const step = 0.5
         if (ev.key === 'ArrowLeft') {
             x -= step
         } else if (ev.key === 'ArrowRight') {
