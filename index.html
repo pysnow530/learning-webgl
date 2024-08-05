@@ -13,6 +13,7 @@
 <ol>
     <li>方向键控制摄像机的x、y轴</li>
     <li>wasd移动相机视角目标点</li>
+    <li>webgl为左手坐标系</li>
 </ol>
 <script>
     const canvas = document.querySelector("#WebGL")
@@ -37,13 +38,17 @@
     const fragmentShaderSrc = `
         precision mediump float;
 
-        uniform vec4 u_BaseColor;
+        uniform vec3 u_BaseColor;
+        uniform vec3 u_LightColor;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
 
         void main() {
-            gl_FragColor = u_BaseColor;
+            vec3 lightDirection = normalize(vec3(2.0, 2.0, -2.0) - v_Position.xyz);
+            vec3 normal = normalize(v_Normal);
+            // FIXME: 侧面和上面光线Z轴异常
+            gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor, 1.0);
         }
         `
 
@@ -110,12 +115,12 @@
         1, -1, -1, 0, 0, 1,
 
         // 左面
-        -1, 1, 1, 0, -1, 0,
-        -1, -1, 1, 0, -1, 0,
-        -1, 1, -1, 0, -1, 0,
-        -1, -1, -1, 0, -1, 0,
-        -1, -1, 1, 0, -1, 0,
-        -1, 1, -1, 0, -1, 0,
+        -1, 1, 1, -1, 0, 0,
+        -1, -1, 1, -1, 0, 0,
+        -1, 1, -1, -1, 0, 0,
+        -1, -1, -1, -1, 0, 0,
+        -1, -1, 1, -1, 0, 0,
+        -1, 1, -1, -1, 0, 0,
     ])
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -131,7 +136,9 @@
     gl.enableVertexAttribArray(a_Normal)
 
     const u_BaseColor = gl.getUniformLocation(shaderProgram, 'u_BaseColor')
-    gl.uniform4f(u_BaseColor, 1, 0, 0, 0)
+    gl.uniform3f(u_BaseColor, 1, 0, 0)
+    const u_LightColor = gl.getUniformLocation(shaderProgram, 'u_LightColor')
+    gl.uniform3f(u_LightColor, 1, 1, 1)
 
     const draw = (x, y, lookAtX, lookAtY) => {
         // MVP变换矩阵
@@ -163,7 +170,6 @@
 
     document.onkeydown = (ev) => {
         const step = 0.5
-        console.log(ev.key)
         if (ev.key === 'ArrowLeft') {
             x -= step
         } else if (ev.key === 'ArrowRight') {
