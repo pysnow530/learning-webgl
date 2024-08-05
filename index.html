@@ -19,58 +19,65 @@
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
-    const vertexShaderSrc = `
-        attribute vec4 a_Position;
-        attribute vec3 a_Normal;
+    const createProgram = (vertexShaderSrc, fragmentShaderSrc) => {
+        // 顶点着色器
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER)
+        gl.shaderSource(vertexShader, vertexShaderSrc)
+        gl.compileShader(vertexShader)
+        const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
+        console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
 
-        varying vec4 v_Position;
-        varying vec3 v_Normal;
+        // 片元着色器
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+        gl.shaderSource(fragmentShader, fragmentShaderSrc)
+        gl.compileShader(fragmentShader)
+        const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
+        console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
 
-        uniform mat4 u_MVP;
+        const shaderProgram = gl.createProgram()
+        gl.attachShader(shaderProgram, vertexShader)
+        gl.attachShader(shaderProgram, fragmentShader)
+        gl.linkProgram(shaderProgram)
+        gl.useProgram(shaderProgram)
 
-        void main() {
-            gl_Position = u_MVP * a_Position;
-            v_Position = a_Position;
-            v_Normal = a_Normal;
-        }
-        `
+        return shaderProgram
+    }
 
-    const fragmentShaderSrc = `
-        precision mediump float;
+    const shaderProgram = createProgram(`
+    attribute vec4 a_Position;
+    attribute vec3 a_Normal;
 
-        uniform vec3 u_BaseColor;
-        uniform vec3 u_LightColor;
+    varying vec4 v_Position;
+    varying vec3 v_Normal;
 
-        varying vec4 v_Position;
-        varying vec3 v_Normal;
+    uniform mat4 u_MVP;
 
-        void main() {
-            vec3 lightDirection = normalize(vec3(2.0, 2.0, -2.0) - v_Position.xyz);
-            vec3 normal = normalize(v_Normal);
-            // FIXME: 侧面和上面光线Z轴异常
+    void main() {
+        gl_Position = u_MVP * a_Position;
+        v_Position = a_Position;
+        v_Normal = a_Normal;
+    }
+    `,
+    `
+    precision mediump float;
+
+    uniform vec3 u_BaseColor;
+    uniform vec3 u_LightColor;
+
+    varying vec4 v_Position;
+    varying vec3 v_Normal;
+
+    void main() {
+        vec3 lightDirection = normalize(vec3(2.0, 2.0, -2.0) - v_Position.xyz);
+        vec3 normal = normalize(v_Normal);
+        // FIXME: 侧面和上面光线Z轴异常
+        if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
+            gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
+        } else {
             gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor, 1.0);
         }
-        `
-
-    // 顶点着色器
-    const vertexShader = gl.createShader(gl.VERTEX_SHADER)
-    gl.shaderSource(vertexShader, vertexShaderSrc)
-    gl.compileShader(vertexShader)
-    const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
-    console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
-
-    // 片元着色器
-    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
-    gl.shaderSource(fragmentShader, fragmentShaderSrc)
-    gl.compileShader(fragmentShader)
-    const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
-    console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
-
-    const shaderProgram = gl.createProgram()
-    gl.attachShader(shaderProgram, vertexShader)
-    gl.attachShader(shaderProgram, fragmentShader)
-    gl.linkProgram(shaderProgram)
-    gl.useProgram(shaderProgram)
+    }
+    `)
 
     // 顶点坐标
     const data = new Float32Array([
@@ -121,6 +128,44 @@
         -1, -1, -1, -1, 0, 0,
         -1, -1, 1, -1, 0, 0,
         -1, 1, -1, -1, 0, 0,
+
+        // 网格
+        -4, 0, -10, 0, 0, 0,
+        -4, 0, 10, 0, 0, 0,
+        -3, 0, -10, 0, 0, 0,
+        -3, 0, 10, 0, 0, 0,
+        -2, 0, -10, 0, 0, 0,
+        -2, 0, 10, 0, 0, 0,
+        -1, 0, -10, 0, 0, 0,
+        -1, 0, 10, 0, 0, 0,
+        0, 0, -10, 0, 0, 0,
+        0, 0, 10, 0, 0, 0,
+        1, 0, -10, 0, 0, 0,
+        1, 0, 10, 0, 0, 0,
+        2, 0, -10, 0, 0, 0,
+        2, 0, 10, 0, 0, 0,
+        3, 0, -10, 0, 0, 0,
+        3, 0, 10, 0, 0, 0,
+        4, 0, -10, 0, 0, 0,
+        4, 0, 10, 0, 0, 0,
+        -10, 0, -4, 0, 0, 0,
+        10, 0, -4, 0, 0, 0,
+        -10, 0, -3, 0, 0, 0,
+        10, 0, -3, 0, 0, 0,
+        -10, 0, -2, 0, 0, 0,
+        10, 0, -2, 0, 0, 0,
+        -10, 0, -1, 0, 0, 0,
+        10, 0, -1, 0, 0, 0,
+        -10, 0, 0, 0, 0, 0,
+        10, 0, 0, 0, 0, 0,
+        -10, 0, 1, 0, 0, 0,
+        10, 0, 1, 0, 0, 0,
+        -10, 0, 2, 0, 0, 0,
+        10, 0, 2, 0, 0, 0,
+        -10, 0, 3, 0, 0, 0,
+        10, 0, 3, 0, 0, 0,
+        -10, 0, 4, 0, 0, 0,
+        10, 0, 4, 0, 0, 0,
     ])
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -155,11 +200,15 @@
         const mvp = projMatrix.mul(viewMatrix)
         gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
 
-        // 画图
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.drawArrays(gl.TRIANGLES, 0, data.length / 6)
+
+        // 绘制网格
+        gl.drawArrays(gl.LINES, 36, 36)
+
+        // 画图
+        gl.drawArrays(gl.TRIANGLES, 0, 36)
     }
 
     let x = 0
