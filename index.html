@@ -7,7 +7,9 @@
 </head>
 <body style="background-color: gray">
 <canvas id="WebGL" width="1024" height="768"></canvas>
-NOTE:
+<p>
+    NOTE:
+</p>
 <ol>
     <li>方向键控制摄像机的x、y轴</li>
     <li>wasd移动相机视角目标点</li>
@@ -18,21 +20,30 @@ NOTE:
 
     const vertexShaderSrc = `
         attribute vec4 a_Position;
+        attribute vec3 a_Normal;
+
         varying vec4 v_Position;
+        varying vec3 v_Normal;
+
         uniform mat4 u_MVP;
+
         void main() {
             gl_Position = u_MVP * a_Position;
             v_Position = a_Position;
+            v_Normal = a_Normal;
         }
         `
 
     const fragmentShaderSrc = `
         precision mediump float;
+
+        uniform vec4 u_BaseColor;
+
         varying vec4 v_Position;
+        varying vec3 v_Normal;
+
         void main() {
-            vec4 color = (v_Position + 1.0) / 2.0;
-            color.a = 1.0;
-            gl_FragColor = color;
+            gl_FragColor = u_BaseColor;
         }
         `
 
@@ -59,60 +70,68 @@ NOTE:
     // 顶点坐标
     const data = new Float32Array([
         // 前面
-        1, 1, 1,
-        -1, 1, 1,
-        1, -1, 1,
-        -1, -1, 1,
-        -1, 1, 1,
-        1, -1, 1,
+        1, 1, 1, 0, 0, -1,
+        -1, 1, 1, 0, 0, -1,
+        1, -1, 1, 0, 0, -1,
+        -1, -1, 1, 0, 0, -1,
+        -1, 1, 1, 0, 0, -1,
+        1, -1, 1, 0, 0, -1,
 
         // 右面
-        1, 1, 1,
-        1, -1, 1,
-        1, 1, -1,
-        1, -1, -1,
-        1, -1, 1,
-        1, 1, -1,
+        1, 1, 1, 1, 0, 0,
+        1, -1, 1, 1, 0, 0,
+        1, 1, -1, 1, 0, 0,
+        1, -1, -1, 1, 0, 0,
+        1, -1, 1, 1, 0, 0,
+        1, 1, -1, 1, 0, 0,
 
         // 上面
-        1, 1, 1,
-        -1, 1, 1,
-        1, 1, -1,
-        -1, 1, -1,
-        -1, 1, 1,
-        1, 1, -1,
+        1, 1, 1, 0, 1, 0,
+        -1, 1, 1, 0, 1, 0,
+        1, 1, -1, 0, 1, 0,
+        -1, 1, -1, 0, 1, 0,
+        -1, 1, 1, 0, 1, 0,
+        1, 1, -1, 0, 1, 0,
 
         // 底面
-        1, -1, 1,
-        -1, -1, 1,
-        1, -1, -1,
-        -1, -1, -1,
-        -1, -1, 1,
-        1, -1, -1,
+        1, -1, 1, 0, -1, 0,
+        -1, -1, 1, 0, -1, 0,
+        1, -1, -1, 0, -1, 0,
+        -1, -1, -1, 0, -1, 0,
+        -1, -1, 1, 0, -1, 0,
+        1, -1, -1, 0, -1, 0,
 
         // 后面
-        1, 1, -1,
-        -1, 1, -1,
-        1, -1, -1,
-        -1, -1, -1,
-        -1, 1, -1,
-        1, -1, -1,
+        1, 1, -1, 0, 0, 1,
+        -1, 1, -1, 0, 0, 1,
+        1, -1, -1, 0, 0, 1,
+        -1, -1, -1, 0, 0, 1,
+        -1, 1, -1, 0, 0, 1,
+        1, -1, -1, 0, 0, 1,
 
         // 左面
-        -1, 1, 1,
-        -1, -1, 1,
-        -1, 1, -1,
-        -1, -1, -1,
-        -1, -1, 1,
-        -1, 1, -1,
+        -1, 1, 1, 0, -1, 0,
+        -1, -1, 1, 0, -1, 0,
+        -1, 1, -1, 0, -1, 0,
+        -1, -1, -1, 0, -1, 0,
+        -1, -1, 1, 0, -1, 0,
+        -1, 1, -1, 0, -1, 0,
     ])
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
     const bytesPerElement = data.BYTES_PER_ELEMENT
+
     const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 3, 0)
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 6, 0)
     gl.enableVertexAttribArray(a_Position)
+
+    const a_Normal = gl.getAttribLocation(shaderProgram, 'a_Normal')
+    gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
+    gl.enableVertexAttribArray(a_Normal)
+
+    const u_BaseColor = gl.getUniformLocation(shaderProgram, 'u_BaseColor')
+    gl.uniform4f(u_BaseColor, 1, 0, 0, 0)
 
     const draw = (x, y, lookAtX, lookAtY) => {
         // MVP变换矩阵
@@ -133,7 +152,7 @@ NOTE:
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.drawArrays(gl.TRIANGLES, 0, data.length / 3)
+        gl.drawArrays(gl.TRIANGLES, 0, data.length / 6)
     }
 
     let x = 0
