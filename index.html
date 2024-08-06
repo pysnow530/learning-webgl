@@ -63,6 +63,7 @@
 
     uniform vec3 u_BaseColor;
     uniform vec3 u_LightColor;
+    uniform vec3 u_AmbientColor;
 
     varying vec4 v_Position;
     varying vec3 v_Normal;
@@ -74,7 +75,8 @@
         if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
             gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
         } else {
-            gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor, 1.0);
+            vec3 diffuse = u_AmbientColor * u_BaseColor;
+            gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor + diffuse, 1.0);
         }
     }
     `)
@@ -181,9 +183,11 @@
     gl.enableVertexAttribArray(a_Normal)
 
     const u_BaseColor = gl.getUniformLocation(shaderProgram, 'u_BaseColor')
-    gl.uniform3f(u_BaseColor, 1, 0, 0)
+    gl.uniform3f(u_BaseColor, 0.8, 0.1, 0.8)
     const u_LightColor = gl.getUniformLocation(shaderProgram, 'u_LightColor')
     gl.uniform3f(u_LightColor, 1, 1, 1)
+    const u_AmbientColor = gl.getUniformLocation(shaderProgram, 'u_AmbientColor')
+    gl.uniform3f(u_AmbientColor, 0.2, 0.2, 0.2)
 
     const draw = (x, y) => {
         // MVP变换矩阵
