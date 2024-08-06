@@ -68,9 +68,9 @@
     varying vec3 v_Normal;
 
     void main() {
-        vec3 lightDirection = normalize(vec3(2.0, 2.0, -2.0) - v_Position.xyz);
+        vec3 lightDirection = normalize(vec3(3.0, 5.0, -6.0) - v_Position.xyz);
         vec3 normal = normalize(v_Normal);
-        // FIXME: 侧面和上面光线Z轴异常
+        // FIXED: 侧面和上面光线Z轴异常
         if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
             gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
         } else {
@@ -81,13 +81,21 @@
 
     // 顶点坐标
     const data = new Float32Array([
+        // 后面
+        1, 1, 1, 0, 0, 1,
+        -1, 1, 1, 0, 0, 1,
+        1, -1, 1, 0, 0, 1,
+        -1, -1, 1, 0, 0, 1,
+        -1, 1, 1, 0, 0, 1,
+        1, -1, 1, 0, 0, 1,
+
         // 前面
-        1, 1, 1, 0, 0, -1,
-        -1, 1, 1, 0, 0, -1,
-        1, -1, 1, 0, 0, -1,
-        -1, -1, 1, 0, 0, -1,
-        -1, 1, 1, 0, 0, -1,
-        1, -1, 1, 0, 0, -1,
+        1, 1, -1, 0, 0, -1,
+        -1, 1, -1, 0, 0, -1,
+        1, -1, -1, 0, 0, -1,
+        -1, -1, -1, 0, 0, -1,
+        -1, 1, -1, 0, 0, -1,
+        1, -1, -1, 0, 0, -1,
 
         // 右面
         1, 1, 1, 1, 0, 0,
@@ -96,6 +104,14 @@
         1, -1, -1, 1, 0, 0,
         1, -1, 1, 1, 0, 0,
         1, 1, -1, 1, 0, 0,
+
+        // 左面
+        -1, 1, 1, -1, 0, 0,
+        -1, -1, 1, -1, 0, 0,
+        -1, 1, -1, -1, 0, 0,
+        -1, -1, -1, -1, 0, 0,
+        -1, -1, 1, -1, 0, 0,
+        -1, 1, -1, -1, 0, 0,
 
         // 上面
         1, 1, 1, 0, 1, 0,
@@ -112,22 +128,6 @@
         -1, -1, -1, 0, -1, 0,
         -1, -1, 1, 0, -1, 0,
         1, -1, -1, 0, -1, 0,
-
-        // 后面
-        1, 1, -1, 0, 0, 1,
-        -1, 1, -1, 0, 0, 1,
-        1, -1, -1, 0, 0, 1,
-        -1, -1, -1, 0, 0, 1,
-        -1, 1, -1, 0, 0, 1,
-        1, -1, -1, 0, 0, 1,
-
-        // 左面
-        -1, 1, 1, -1, 0, 0,
-        -1, -1, 1, -1, 0, 0,
-        -1, 1, -1, -1, 0, 0,
-        -1, -1, -1, -1, 0, 0,
-        -1, -1, 1, -1, 0, 0,
-        -1, 1, -1, -1, 0, 0,
 
         // 网格
         -4, 0, -10, 0, 0, 0,
@@ -185,7 +185,7 @@
     const u_LightColor = gl.getUniformLocation(shaderProgram, 'u_LightColor')
     gl.uniform3f(u_LightColor, 1, 1, 1)
 
-    const draw = (x, y, lookAtX, lookAtY) => {
+    const draw = (x, y) => {
         // MVP变换矩阵
         // ViewMatrix验证思路：
         // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
@@ -193,12 +193,16 @@
         // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
         // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
         // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
-        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, 5), new Vec3(lookAtX, lookAtY, 0))
+        const viewMatrix = Mat4.ViewMatrix(new Vec3(x, y, -5), new Vec3(0, 0, 0))
         // FIXED: near大于0时，颜色有干扰
         // FIXED: 相机aspect不是1:1时，正方体显示异常
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
         const mvp = projMatrix.mul(viewMatrix)
         gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
+
+        // const a = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, 1))
+        // const b = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
+        // console.log(b.mul(a).mulVec4(new Vec4(1,1,1,1)))
 
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
@@ -213,9 +217,7 @@
 
     let x = 3
     let y = 3
-    let lookAtX = 0
-    let lookAtY = 0
-    draw(x, y, lookAtX, lookAtY)
+    draw(x, y)
 
     document.onkeydown = (ev) => {
         const step = 0.5
@@ -227,16 +229,8 @@
             y -= step
         } else if (ev.key === 'ArrowUp') {
             y += step
-        } else if (ev.key === 'a') {
-            lookAtX -= step
-        } else if (ev.key === 's') {
-            lookAtY -= step
-        } else if (ev.key === 'd') {
-            lookAtX += step
-        } else if (ev.key === 'w') {
-            lookAtY += step
         }
-        draw(x, y, lookAtX, lookAtY)
+        draw(x, y)
     }
 </script>
 </body>
