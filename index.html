@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>learning webgl</title>
     <script src="lib/structs.js"></script>
+    <script src="lib/utils.js"></script>
 </head>
 <body style="background-color: gray">
 <canvas id="WebGL" width="1024" height="768"></canvas>
@@ -12,74 +13,57 @@
 </p>
 <ol>
     <li>方向键控制摄像机的x、y轴</li>
-    <li>wasd移动相机视角目标点</li>
     <li>webgl为左手坐标系</li>
+    <li>该程序中视图坐标系也为左手系</li>
 </ol>
 <script>
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
-    const createProgram = (vertexShaderSrc, fragmentShaderSrc) => {
-        // 顶点着色器
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER)
-        gl.shaderSource(vertexShader, vertexShaderSrc)
-        gl.compileShader(vertexShader)
-        const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
-        console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
+    class BoxObject extends GameObject {
+        vertexShaderSrc = `
+        attribute vec4 a_Position;
+        attribute vec3 a_Normal;
 
-        // 片元着色器
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
-        gl.shaderSource(fragmentShader, fragmentShaderSrc)
-        gl.compileShader(fragmentShader)
-        const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
-        console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
+        varying vec4 v_Position;
+        varying vec3 v_Normal;
 
-        const shaderProgram = gl.createProgram()
-        gl.attachShader(shaderProgram, vertexShader)
-        gl.attachShader(shaderProgram, fragmentShader)
-        gl.linkProgram(shaderProgram)
-        gl.useProgram(shaderProgram)
+        uniform mat4 u_MVP;
 
-        return shaderProgram
-    }
-
-    const shaderProgram = createProgram(`
-    attribute vec4 a_Position;
-    attribute vec3 a_Normal;
-
-    varying vec4 v_Position;
-    varying vec3 v_Normal;
-
-    uniform mat4 u_MVP;
-
-    void main() {
-        gl_Position = u_MVP * a_Position;
-        v_Position = a_Position;
-        v_Normal = a_Normal;
-    }
-    `,
-    `
-    precision mediump float;
-
-    uniform vec3 u_BaseColor;
-    uniform vec3 u_LightColor;
-    uniform vec3 u_AmbientColor;
-
-    varying vec4 v_Position;
-    varying vec3 v_Normal;
-
-    void main() {
-        vec3 lightDirection = normalize(vec3(3.0, 5.0, -6.0) - v_Position.xyz);
-        vec3 normal = normalize(v_Normal);
-        // FIXED: 侧面和上面光线Z轴异常
-        if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
-            gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
-        } else {
-            vec3 diffuse = u_AmbientColor * u_BaseColor;
-            gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor + diffuse, 1.0);
+        void main() {
+            gl_Position = u_MVP * a_Position;
+            v_Position = a_Position;
+            v_Normal = a_Normal;
         }
+        `
+        fragmentShaderSrc = `
+        precision mediump float;
+
+        uniform vec3 u_BaseColor;
+        uniform vec3 u_LightColor;
+        uniform vec3 u_AmbientColor;
+
+        varying vec4 v_Position;
+        varying vec3 v_Normal;
+
+        void main() {
+            vec3 lightDirection = normalize(vec3(3.0, 5.0, -6.0) - v_Position.xyz);
+            vec3 normal = normalize(v_Normal);
+            // FIXED: 侧面和上面光线Z轴异常
+            if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
+                gl_FragColor = vec4(0.8, 0.8, 0.8, 1.0);
+            } else {
+                vec3 diffuse = u_AmbientColor * u_BaseColor;
+                gl_FragColor = vec4(dot(lightDirection, normal) * u_LightColor * u_BaseColor + diffuse, 1.0);
+            }
+        }
+        `
     }
-    `)
+
+    const gameObject = new BoxObject()
+    gameObject.createAndLinkProgram(gameObject.vertexShaderSrc, gameObject.fragmentShaderSrc)
+    const shaderProgram = gameObject.program
+    gl.useProgram(shaderProgram)
 
     // 顶点坐标
     const data = new Float32Array([
