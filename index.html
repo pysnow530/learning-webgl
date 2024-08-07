@@ -20,15 +20,15 @@
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
-    class BoxObject extends GameObject {
+    class Box extends GameObject {
         vertexShaderSrc = `
         attribute vec4 a_Position;
         attribute vec3 a_Normal;
 
+        uniform mat4 u_MVP;
+
         varying vec4 v_Position;
         varying vec3 v_Normal;
-
-        uniform mat4 u_MVP;
 
         void main() {
             gl_Position = u_MVP * a_Position;
@@ -60,10 +60,9 @@
         `
     }
 
-    const gameObject = new BoxObject()
-    gameObject.createAndLinkProgram(gameObject.vertexShaderSrc, gameObject.fragmentShaderSrc)
-    const shaderProgram = gameObject.program
-    gl.useProgram(shaderProgram)
+    const box = new Box()
+    box.init()
+    gl.useProgram(box.program)
 
     // 顶点坐标
     const data = new Float32Array([
@@ -158,20 +157,17 @@
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
     const bytesPerElement = data.BYTES_PER_ELEMENT
 
-    const a_Position = gl.getAttribLocation(shaderProgram, 'a_Position')
+    const a_Position = gl.getAttribLocation(box.program, 'a_Position')
     gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 6, 0)
     gl.enableVertexAttribArray(a_Position)
 
-    const a_Normal = gl.getAttribLocation(shaderProgram, 'a_Normal')
+    const a_Normal = gl.getAttribLocation(box.program, 'a_Normal')
     gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
     gl.enableVertexAttribArray(a_Normal)
 
-    const u_BaseColor = gl.getUniformLocation(shaderProgram, 'u_BaseColor')
-    gl.uniform3f(u_BaseColor, 0.8, 0.1, 0.8)
-    const u_LightColor = gl.getUniformLocation(shaderProgram, 'u_LightColor')
-    gl.uniform3f(u_LightColor, 1, 1, 1)
-    const u_AmbientColor = gl.getUniformLocation(shaderProgram, 'u_AmbientColor')
-    gl.uniform3f(u_AmbientColor, 0.2, 0.2, 0.2)
+    box.setUniform('u_BaseColor', [0.8, 0.1, 0.8])
+    box.setUniform('u_LightColor', [1, 1, 1])
+    box.setUniform('u_AmbientColor', [0.2, 0.2, 0.2])
 
     const draw = (x, y) => {
         // MVP变换矩阵
@@ -186,7 +182,7 @@
         // FIXED: 相机aspect不是1:1时，正方体显示异常
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
         const mvp = projMatrix.mul(viewMatrix)
-        gl.uniformMatrix4fv(gl.getUniformLocation(shaderProgram, 'u_MVP'), false, mvp.T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(box.program, 'u_MVP'), false, mvp.T())
 
         // const a = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, 1))
         // const b = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
