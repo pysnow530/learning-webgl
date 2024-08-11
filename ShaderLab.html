@@ -20,11 +20,11 @@
 </div>
 <div>
     <label>
-        <textarea rows="20" style="width: 45%" id="vertexShaderCode"
+        <textarea rows="20" style="width: 45px" id="vertexShaderCode"
                   onchange="updateShaderCode('vertexShaderCode')"></textarea>
     </label>
     <label>
-        <textarea rows="20" style="width: 45%" id="fragmentShaderCode"
+        <textarea rows="20" style="width: 45px" id="fragmentShaderCode"
                   onchange="updateShaderCode('fragmentShaderCode')"></textarea>
     </label>
 </div>
@@ -33,6 +33,9 @@
 <script src="lib/codemirror/lib/codemirror.js"></script>
 <script src="lib/shader.js"></script>
 <script>
+    let vextexCodeEditor
+    let fragmentCodeEditor
+
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
@@ -58,18 +61,28 @@ void main() {
 }
 `
 
-        // document.querySelector('#vertexShaderCode').value = vertexShaderSrc
-        let editor = CodeMirror.fromTextArea(document.querySelector('#vertexShaderCode'), {
+        vextexCodeEditor = CodeMirror.fromTextArea(document.querySelector('#vertexShaderCode'), {
             mode: 'text/x-csrc',
             lineNumbers: true
         })
-        editor.setValue(vertexShaderSrc)
-        document.querySelector('#fragmentShaderCode').value = fragmentShaderSrc
+        vextexCodeEditor.setValue(vertexShaderSrc)
+        vextexCodeEditor.on('change', (cm) => {
+            updateShaderCode('vertexShaderCode', cm)
+        })
+
+        fragmentCodeEditor = CodeMirror.fromTextArea(document.querySelector('#fragmentShaderCode'), {
+            mode: 'text/x-csrc',
+            lineNumbers: true
+        })
+        fragmentCodeEditor.setValue(fragmentShaderSrc)
+        fragmentCodeEditor.on('change', (cm) => {
+            updateShaderCode('fragmentShaderCode', cm)
+        })
     }
 
-    const updateShaderCode = (domId) => {
+    const updateShaderCode = (domId, cm) => {
         const isVertex = domId.startsWith('vertex')
-        gl.shaderSource(isVertex ? gl.vertexShader : gl.fragmentShader, document.querySelector(`#${domId}`).value)
+        gl.shaderSource(isVertex ? gl.vertexShader : gl.fragmentShader, cm.getValue())
         gl.compileShader(isVertex ? gl.vertexShader : gl.fragmentShader)
         const shaderInfoLog = gl.getShaderInfoLog(isVertex ? gl.vertexShader : gl.fragmentShader)
         if (shaderInfoLog) {
@@ -171,7 +184,7 @@ void main() {
             return shaderProgram
         }
 
-        const program = createProgram(document.querySelector('#vertexShaderCode').value, document.querySelector('#fragmentShaderCode').value)
+        const program = createProgram(vextexCodeEditor.getValue(), fragmentCodeEditor.getValue())
         gl.useProgram(program)
         gl.program = program
 
