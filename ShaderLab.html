@@ -74,7 +74,7 @@ void main() {
     const updateVertex = () => {
         const vertexOption = document.querySelector('#vertex').value
         if (vertexOption === 'plane') {
-            vertexData = new Float32Array([-1, 1, 0, -1, -1, 0, 1, -1, 0, 1, 1, 0])
+            vertexData = new Float32Array([-1, 1, 0, -1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0])
         } else if (vertexOption === 'box') {
             vertexData = new Float32Array([
                 // 后面
