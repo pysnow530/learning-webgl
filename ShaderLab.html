@@ -28,6 +28,10 @@
                   onchange="updateShaderCode('fragmentShaderCode')"></textarea>
     </label>
 </div>
+
+<link rel="stylesheet" href="lib/codemirror/lib/codemirror.css">
+<script src="lib/codemirror/lib/codemirror.js"></script>
+<script src="lib/shader.js"></script>
 <script>
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
@@ -54,7 +58,12 @@ void main() {
 }
 `
 
-        document.querySelector('#vertexShaderCode').value = vertexShaderSrc
+        // document.querySelector('#vertexShaderCode').value = vertexShaderSrc
+        let editor = CodeMirror.fromTextArea(document.querySelector('#vertexShaderCode'), {
+            mode: 'text/x-csrc',
+            lineNumbers: true
+        })
+        editor.setValue(vertexShaderSrc)
         document.querySelector('#fragmentShaderCode').value = fragmentShaderSrc
     }
 
