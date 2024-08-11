@@ -35,6 +35,7 @@
 <script>
     let vextexCodeEditor
     let fragmentCodeEditor
+    let time0
 
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
@@ -78,6 +79,8 @@ void main() {
         fragmentCodeEditor.on('change', (cm) => {
             updateShaderCode('fragmentShaderCode', cm)
         })
+
+        time0 = (new Date()).getTime() / 1000
     }
 
     const updateShaderCode = (domId, cm) => {
@@ -198,6 +201,7 @@ void main() {
         gl.enableVertexAttribArray(a_Position)
 
         const draw = () => {
+            gl.uniform1f(gl.getUniformLocation(gl.program, 'u_Time'), (new Date()).getTime() / 1000 - time0)
             gl.enable(gl.DEPTH_TEST)
             gl.clearColor(0, 0, 0, 1)
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
