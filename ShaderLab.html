@@ -11,10 +11,12 @@
 </div>
 <div>
     <label>
-        <textarea rows="20" style="width: 45%" id="vertexShaderCode" onchange="updateShaderCode('vertexShaderCode')"></textarea>
+        <textarea rows="20" style="width: 45%" id="vertexShaderCode"
+                  onchange="updateShaderCode('vertexShaderCode')"></textarea>
     </label>
     <label>
-        <textarea rows="20" style="width: 45%" id="fragmentShaderCode" onchange="updateShaderCode('fragmentShaderCode')"></textarea>
+        <textarea rows="20" style="width: 45%" id="fragmentShaderCode"
+                  onchange="updateShaderCode('fragmentShaderCode')"></textarea>
     </label>
 </div>
 <script>
@@ -49,7 +51,13 @@ void main() {
         const isVertex = domId.startsWith('vertex')
         gl.shaderSource(isVertex ? gl.vertexShader : gl.fragmentShader, document.querySelector(`#${domId}`).value)
         gl.compileShader(isVertex ? gl.vertexShader : gl.fragmentShader)
-        gl.linkProgram(gl.program)
+        const shaderInfoLog = gl.getShaderInfoLog(isVertex ? gl.vertexShader : gl.fragmentShader)
+        if (shaderInfoLog) {
+            console.log(`shaderInfoLog: ${shaderInfoLog}`)
+        } else {
+            gl.linkProgram(gl.program)
+            console.log(`shader code updated!`)
+        }
     }
 
     const main = () => {
