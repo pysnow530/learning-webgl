@@ -62,7 +62,7 @@ void main() {
 `
 
         vextexCodeEditor = CodeMirror.fromTextArea(document.querySelector('#vertexShaderCode'), {
-            mode: 'text/x-csrc',
+            mode: 'x-shader/x-vertex',
             lineNumbers: true
         })
         vextexCodeEditor.setValue(vertexShaderSrc)
@@ -71,7 +71,7 @@ void main() {
         })
 
         fragmentCodeEditor = CodeMirror.fromTextArea(document.querySelector('#fragmentShaderCode'), {
-            mode: 'text/x-csrc',
+            mode: 'x-shader/x-fragment',
             lineNumbers: true
         })
         fragmentCodeEditor.setValue(fragmentShaderSrc)
