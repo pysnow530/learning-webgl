@@ -11,13 +11,16 @@
 </div>
 <div>
     <label>
-        <textarea rows="20" style="width: 45%" id="vertexShaderCode"></textarea>
+        <textarea rows="20" style="width: 45%" id="vertexShaderCode" onchange="updateShaderCode('vertexShaderCode')"></textarea>
     </label>
     <label>
-        <textarea rows="20" style="width: 45%" id="fragmentShaderCode"></textarea>
+        <textarea rows="20" style="width: 45%" id="fragmentShaderCode" onchange="updateShaderCode('fragmentShaderCode')"></textarea>
     </label>
 </div>
 <script>
+    const canvas = document.querySelector("#WebGL")
+    const gl = canvas.getContext('webgl')
+
     // 初始化脚本内容
     const init = () => {
         const vertexShaderSrc = `attribute vec4 a_Position;
@@ -42,28 +45,32 @@ void main() {
         document.querySelector('#fragmentShaderCode').value = fragmentShaderSrc
     }
 
-    const main = () => {
-        const canvas = document.querySelector("#WebGL")
-        const gl = canvas.getContext('webgl')
+    const updateShaderCode = (domId) => {
+        const isVertex = domId.startsWith('vertex')
+        gl.shaderSource(isVertex ? gl.vertexShader : gl.fragmentShader, document.querySelector(`#${domId}`).value)
+        gl.compileShader(isVertex ? gl.vertexShader : gl.fragmentShader)
+        gl.linkProgram(gl.program)
+    }
 
+    const main = () => {
         const createProgram = (vertexShaderSrc, fragmentShaderSrc) => {
             // 顶点着色器
-            const vertexShader = gl.createShader(gl.VERTEX_SHADER)
-            gl.shaderSource(vertexShader, vertexShaderSrc)
-            gl.compileShader(vertexShader)
-            const vertexShaderInfoLog = gl.getShaderInfoLog(vertexShader)
+            gl.vertexShader = gl.createShader(gl.VERTEX_SHADER)
+            gl.shaderSource(gl.vertexShader, vertexShaderSrc)
+            gl.compileShader(gl.vertexShader)
+            const vertexShaderInfoLog = gl.getShaderInfoLog(gl.vertexShader)
             console.log(`vertexShaderInfoLog: ${vertexShaderInfoLog}`)
 
             // 片元着色器
-            const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
-            gl.shaderSource(fragmentShader, fragmentShaderSrc)
-            gl.compileShader(fragmentShader)
-            const fragmentShaderInfoLog = gl.getShaderInfoLog(fragmentShader)
+            gl.fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+            gl.shaderSource(gl.fragmentShader, fragmentShaderSrc)
+            gl.compileShader(gl.fragmentShader)
+            const fragmentShaderInfoLog = gl.getShaderInfoLog(gl.fragmentShader)
             console.log(`fragmentShaderInfoLog: ${fragmentShaderInfoLog}`)
 
             const shaderProgram = gl.createProgram()
-            gl.attachShader(shaderProgram, vertexShader)
-            gl.attachShader(shaderProgram, fragmentShader)
+            gl.attachShader(shaderProgram, gl.vertexShader)
+            gl.attachShader(shaderProgram, gl.fragmentShader)
             gl.linkProgram(shaderProgram)
 
             return shaderProgram
@@ -71,15 +78,16 @@ void main() {
 
         const program = createProgram(document.querySelector('#vertexShaderCode').value, document.querySelector('#fragmentShaderCode').value)
         gl.useProgram(program)
+        gl.program = program
 
         // 顶点坐标
-        const data = new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1])
+        const data = new Float32Array([-1, 1, 0, -1, -1, 0, 1, -1, 0, 1, 1, 0])
         const buffer = gl.createBuffer()
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
         const bytesPerElement = data.BYTES_PER_ELEMENT
         const a_Position = gl.getAttribLocation(program, 'a_Position')
-        gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, bytesPerElement * 2, 0)
+        gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 3, 0)
         gl.enableVertexAttribArray(a_Position)
 
         const draw = () => {
@@ -91,7 +99,12 @@ void main() {
             gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
         }
 
-        draw()
+        const drawAndRegisterNextFrame = () => {
+            draw()
+            requestAnimationFrame(drawAndRegisterNextFrame)
+        }
+
+        drawAndRegisterNextFrame()
     }
 </script>
 </body>
