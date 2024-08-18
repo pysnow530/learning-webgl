@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebGL Two Programs and Two Buffers Example</title>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<canvas id="glcanvas" width="640" height="480"></canvas>
+<script>
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) {
+        console.error('WebGL not supported, falling back on experimental-webgl');
+        gl = canvas.getContext('experimental-webgl');
+    }
+
+    if (!gl) {
+        alert('Your browser or machine may not support WebGL');
+    }
+
+    // 第一个程序的顶点着色器和片段着色器
+    const vertexShaderSource1 = `
+        attribute vec4 a_position;
+        void main() {
+            gl_Position = a_position;
+        }
+    `;
+
+    const fragmentShaderSource1 = `
+        void main() {
+            gl_FragColor = vec4(1, 0, 0, 1); // 红色
+        }
+    `;
+
+    // 第二个程序的顶下着色器和片段着色器
+    const vertexShaderSource2 = `
+        attribute vec4 a_position;
+        void main() {
+            gl_Position = a_position;
+        }
+    `;
+
+    const fragmentShaderSource2 = `
+        void main() {
+            gl_FragColor = vec4(0, 0, 1, 1); // 蓝色
+        }
+    `;
+
+    // 编译着色器
+    function compileShader(source, type) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+        if (success) {
+            return shader;
+        }
+        console.error(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+    }
+
+    // 创建并链接程序
+    const vertexShader1 = compileShader(vertexShaderSource1, gl.VERTEX_SHADER);
+    const fragmentShader1 = compileShader(fragmentShaderSource1, gl.FRAGMENT_SHADER);
+    const program1 = gl.createProgram();
+    gl.attachShader(program1, vertexShader1);
+    gl.attachShader(program1, fragmentShader1);
+    gl.linkProgram(program1);
+    const success1 = gl.getProgramParameter(program1, gl.LINK_STATUS);
+    if (success1) {
+        gl.useProgram(program1);
+    } else {
+        console.error(gl.getProgramInfoLog(program1));
+        gl.deleteProgram(program1);
+    }
+
+    const vertexShader2 = compileShader(vertexShaderSource2, gl.VERTEX_SHADER);
+    const fragmentShader2 = compileShader(fragmentShaderSource2, gl.FRAGMENT_SHADER);
+    const program2 = gl.createProgram();
+    gl.attachShader(program2, vertexShader2);
+    gl.attachShader(program2, fragmentShader2);
+    gl.linkProgram(program2);
+    const success2 = gl.getProgramParameter(program2, gl.LINK_STATUS);
+    if (success2) {
+        // 不立即使用 program2，稍后在绘制蓝色三角形时使用
+    } else {
+        console.error(gl.getProgramInfoLog(program2));
+        gl.deleteProgram(program2);
+    }
+
+    // 获取属性位置
+    const positionAttributeLocation1 = gl.getAttribLocation(program1, 'a_position');
+    const positionAttributeLocation2 = gl.getAttribLocation(program2, 'a_position');
+
+    // 创建并绑定第一个缓冲区
+    const vertexBuffer1 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer1);
+    const vertices1 = [
+        -1.0, -1.0,
+        1.0, -1.0,
+        -1.0, 1.0,
+        -1.0, -1.0,
+        1.0, -1.0,
+        1.0, 1.0,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices1), gl.STATIC_DRAW);
+
+    // 创建并绑定第二个缓冲区
+    const vertexBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer2);
+    const vertices2 = [
+        0.0, 1.0,
+        -1.0, -1.0,
+        1.0, -1.0,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices2), gl.STATIC_DRAW);
+
+    const draw = () => {
+        // 绘制第一个三角形（红色）
+        gl.useProgram(program1);
+        gl.enableVertexAttribArray(positionAttributeLocation1);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer1);
+        gl.vertexAttribPointer(positionAttributeLocation1, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        // 绘制第二个三角形（蓝色）
+        gl.useProgram(program2);
+        gl.enableVertexAttribArray(positionAttributeLocation2);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer2);
+        gl.vertexAttribPointer(positionAttributeLocation2, 2, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    draw()
+    let x, y
+    document.onkeydown = (ev) => {
+        const step = 0.5
+        if (ev.key === 'ArrowLeft') {
+            x -= step
+        } else if (ev.key === 'ArrowRight') {
+            x += step
+        } else if (ev.key === 'ArrowDown') {
+            y -= step
+        } else if (ev.key === 'ArrowUp') {
+            y += step
+        }
+        draw()
+    }
+</script>
+</body>
+</html>
