@@ -20,8 +20,7 @@
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
 
-    class Box extends GameObject {
-        vertexShaderSrc = `
+    const mvpVertexShader = `
         attribute vec4 a_Position;
         attribute vec3 a_Normal;
 
@@ -36,7 +35,8 @@
             v_Normal = a_Normal;
         }
         `
-        fragmentShaderSrc = `
+
+    const boxFragmentShader = `
         precision mediump float;
 
         uniform vec3 u_BaseColor;
@@ -57,13 +57,8 @@
             vec3 lightDirection = normalize(vec3(3.0, 5.0, -6.0) - v_Position.xyz);
             vec3 normal = normalize(v_Normal);
             vec3 color;
-            // FIXED: 侧面和上面光线Z轴异常
-            if (abs(v_Position.x) > 1.0 || abs(v_Position.y) > 1.0 || abs(v_Position.z) > 1.0) {
-                color = vec3(0.8, 0.8, 0.8);
-            } else {
-                vec3 diffuse = u_AmbientColor * u_BaseColor;
-                color = vec3(max(dot(lightDirection, normal), 0.0) * u_LightColor * u_BaseColor + diffuse);
-            }
+            vec3 diffuse = u_AmbientColor * u_BaseColor;
+            color = vec3(max(dot(lightDirection, normal), 0.0) * u_LightColor * u_BaseColor + diffuse);
 
             // 实现大气雾效果
             fog.color = vec3(0.0, 0.0, 0.0);
@@ -75,14 +70,43 @@
             gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
         }
         `
-    }
 
-    const box = new Box()
-    box.init()
-    gl.useProgram(box.program)
+    const gridFragmentShader = `
+        precision mediump float;
 
-    // 顶点坐标
-    const data = new Float32Array([
+        uniform vec3 u_BaseColor;
+        uniform vec3 u_LightColor;
+        uniform vec3 u_AmbientColor;
+        uniform vec3 u_Eye;
+
+        varying vec4 v_Position;
+        varying vec3 v_Normal;
+
+        struct Fog {
+            vec3 color;
+            float near;
+            float far;
+        } fog;
+
+        void main() {
+            vec3 lightDirection = normalize(vec3(3.0, 5.0, -6.0) - v_Position.xyz);
+            vec3 normal = normalize(v_Normal);
+            vec3 color;
+            color = vec3(0.8, 0.8, 0.8);
+
+            // 实现大气雾效果
+            fog.color = vec3(0.0, 0.0, 0.0);
+            fog.near = 5.0;
+            fog.far = 15.0;
+
+            float fogDistance = distance(u_Eye, v_Position.xyz);
+            float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
+            gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
+        }
+        `
+
+    // 顶点缓存数据
+    const boxData = new Float32Array([
         // 后面
         1, 1, 1, 0, 0, 1,
         -1, 1, 1, 0, 0, 1,
@@ -130,61 +154,70 @@
         -1, -1, -1, 0, -1, 0,
         -1, -1, 1, 0, -1, 0,
         1, -1, -1, 0, -1, 0,
-
-        // 网格
-        -4, 0, -10, 0, 0, 0,
-        -4, 0, 10, 0, 0, 0,
-        -3, 0, -10, 0, 0, 0,
-        -3, 0, 10, 0, 0, 0,
-        -2, 0, -10, 0, 0, 0,
-        -2, 0, 10, 0, 0, 0,
-        -1, 0, -10, 0, 0, 0,
-        -1, 0, 10, 0, 0, 0,
-        0, 0, -10, 0, 0, 0,
-        0, 0, 10, 0, 0, 0,
-        1, 0, -10, 0, 0, 0,
-        1, 0, 10, 0, 0, 0,
-        2, 0, -10, 0, 0, 0,
-        2, 0, 10, 0, 0, 0,
-        3, 0, -10, 0, 0, 0,
-        3, 0, 10, 0, 0, 0,
-        4, 0, -10, 0, 0, 0,
-        4, 0, 10, 0, 0, 0,
-        -10, 0, -4, 0, 0, 0,
-        10, 0, -4, 0, 0, 0,
-        -10, 0, -3, 0, 0, 0,
-        10, 0, -3, 0, 0, 0,
-        -10, 0, -2, 0, 0, 0,
-        10, 0, -2, 0, 0, 0,
-        -10, 0, -1, 0, 0, 0,
-        10, 0, -1, 0, 0, 0,
-        -10, 0, 0, 0, 0, 0,
-        10, 0, 0, 0, 0, 0,
-        -10, 0, 1, 0, 0, 0,
-        10, 0, 1, 0, 0, 0,
-        -10, 0, 2, 0, 0, 0,
-        10, 0, 2, 0, 0, 0,
-        -10, 0, 3, 0, 0, 0,
-        10, 0, 3, 0, 0, 0,
-        -10, 0, 4, 0, 0, 0,
-        10, 0, 4, 0, 0, 0,
     ])
-    const buffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
-    const bytesPerElement = data.BYTES_PER_ELEMENT
 
-    const a_Position = gl.getAttribLocation(box.program, 'a_Position')
-    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, bytesPerElement * 6, 0)
-    gl.enableVertexAttribArray(a_Position)
+    const gridData = new Float32Array([
+        -4, 0, -10,
+        -4, 0, 10,
+        -3, 0, -10,
+        -3, 0, 10,
+        -2, 0, -10,
+        -2, 0, 10,
+        -1, 0, -10,
+        -1, 0, 10,
+        0, 0, -10,
+        0, 0, 10,
+        1, 0, -10,
+        1, 0, 10,
+        2, 0, -10,
+        2, 0, 10,
+        3, 0, -10,
+        3, 0, 10,
+        4, 0, -10,
+        4, 0, 10,
+        -10, 0, -4,
+        10, 0, -4,
+        -10, 0, -3,
+        10, 0, -3,
+        -10, 0, -2,
+        10, 0, -2,
+        -10, 0, -1,
+        10, 0, -1,
+        -10, 0, 0,
+        10, 0, 0,
+        -10, 0, 1,
+        10, 0, 1,
+        -10, 0, 2,
+        10, 0, 2,
+        -10, 0, 3,
+        10, 0, 3,
+        -10, 0, 4,
+        10, 0, 4,
+    ])
 
-    const a_Normal = gl.getAttribLocation(box.program, 'a_Normal')
-    gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
-    gl.enableVertexAttribArray(a_Normal)
+    const gridVertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, gridData, gl.STATIC_DRAW)
+    const bytesPerElement = gridData.BYTES_PER_ELEMENT
 
-    box.setUniform('u_BaseColor', [1, 0, 1])
-    box.setUniform('u_LightColor', [1, 1, 1])
-    box.setUniform('u_AmbientColor', [0.2, 0.2, 0.2])
+    const boxVertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, boxData, gl.STATIC_DRAW)
+
+    // 两个Program
+    const gridProgram = createProgram(mvpVertexShader, gridFragmentShader)
+    const boxProgram = createProgram(mvpVertexShader, boxFragmentShader)
+
+    // 灯光属性
+    const programs = [gridProgram, boxProgram]
+    for (let i = 0; i < programs.length; i++) {
+        const program = programs[i]
+        gl.useProgram(program)
+        gl.uniform3fv(gl.getUniformLocation(program, 'u_BaseColor'), [1, 0, 1])
+        gl.uniform3fv(gl.getUniformLocation(program, 'u_LightColor'), [1, 1, 1])
+        gl.uniform3fv(gl.getUniformLocation(program, 'u_AmbientColor'), [0.2, 0.2, 0.2])
+    }
+
 
     const draw = (x, y) => {
         // MVP变换矩阵
@@ -200,21 +233,29 @@
         // FIXED: 相机aspect不是1:1时，正方体显示异常
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
         const mvp = projMatrix.mul(viewMatrix)
-        gl.uniformMatrix4fv(gl.getUniformLocation(box.program, 'u_MVP'), false, mvp.T())
-        gl.uniform3fv(gl.getUniformLocation(box.program, 'u_Eye'), eye)
-
-        // const a = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, 1))
-        // const b = Mat4.ProjMatrix(1024 / 768, 60 / 180 * Math.PI, .3, 100)
-        // console.log(b.mul(a).mulVec4(new Vec4(1,1,1,1)))
 
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
         // 绘制网格
-        gl.drawArrays(gl.LINES, 36, 36)
+        gl.useProgram(gridProgram)
+        gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_MVP'), false, mvp.T())
+        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_Eye'), eye)
+        gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
+        gl.vertexAttribPointer(gl.getAttribLocation(gridProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
+        gl.enableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
+        gl.drawArrays(gl.LINES, 0, gridData.length / 3)
 
-        // 画图
+        // 绘制box
+        gl.useProgram(boxProgram)
+        gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_MVP'), false, mvp.T())
+        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
+        gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBuffer)
+        gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 6, 0)
+        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
+        gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Normal'), 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
+        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
         gl.drawArrays(gl.TRIANGLES, 0, 36)
     }
 
