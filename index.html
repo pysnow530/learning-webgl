@@ -156,44 +156,29 @@
         1, -1, -1, 0, -1, 0,
     ])
 
-    const gridData = new Float32Array([
-        -4, 0, -10,
-        -4, 0, 10,
-        -3, 0, -10,
-        -3, 0, 10,
-        -2, 0, -10,
-        -2, 0, 10,
-        -1, 0, -10,
-        -1, 0, 10,
-        0, 0, -10,
-        0, 0, 10,
-        1, 0, -10,
-        1, 0, 10,
-        2, 0, -10,
-        2, 0, 10,
-        3, 0, -10,
-        3, 0, 10,
-        4, 0, -10,
-        4, 0, 10,
-        -10, 0, -4,
-        10, 0, -4,
-        -10, 0, -3,
-        10, 0, -3,
-        -10, 0, -2,
-        10, 0, -2,
-        -10, 0, -1,
-        10, 0, -1,
-        -10, 0, 0,
-        10, 0, 0,
-        -10, 0, 1,
-        10, 0, 1,
-        -10, 0, 2,
-        10, 0, 2,
-        -10, 0, 3,
-        10, 0, 3,
-        -10, 0, 4,
-        10, 0, 4,
-    ])
+    const genGrid = (length, gap) => {
+        let lst = [
+            -length / 2, 0, 0,
+            length / 2, 0, 0,
+            0, 0, -length / 2,
+            0, 0, length / 2,
+        ]
+        for (let delta = gap; delta <= length / 2; delta += gap) {
+            lst = lst.concat([
+                -length / 2, 0, delta,
+                length / 2, 0, delta,
+                -length / 2, 0, -delta,
+                length / 2, 0, -delta,
+                delta, 0, -length / 2,
+                delta, 0, length / 2,
+                -delta, 0, -length / 2,
+                -delta, 0, length / 2,
+            ])
+        }
+        return lst
+    }
+
+    const gridData = new Float32Array(genGrid(25, 1))
 
     const gridVertexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
@@ -245,6 +230,7 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(gridProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
         gl.enableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
+        // FIXME: 提示 GL_INVALID_OPERATION: Vertex buffer is not big enough for the draw call
         gl.drawArrays(gl.LINES, 0, gridData.length / 3)
 
         // 绘制box
