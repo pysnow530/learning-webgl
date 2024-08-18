@@ -67,7 +67,7 @@
 
             // 实现大气雾效果
             fog.color = vec3(0.0, 0.0, 0.0);
-            fog.near = 0.3;
+            fog.near = 5.0;
             fog.far = 15.0;
 
             float fogDistance = distance(u_Eye, v_Position.xyz);
@@ -182,7 +182,7 @@
     gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
     gl.enableVertexAttribArray(a_Normal)
 
-    box.setUniform('u_BaseColor', [0.8, 0.1, 0.8])
+    box.setUniform('u_BaseColor', [1, 0, 1])
     box.setUniform('u_LightColor', [1, 1, 1])
     box.setUniform('u_AmbientColor', [0.2, 0.2, 0.2])
 
