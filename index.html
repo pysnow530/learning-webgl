@@ -260,6 +260,9 @@
 
     document.onkeydown = (ev) => {
         const step = 0.5
+        if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].indexOf(ev.key) === -1)
+            return
+
         if (ev.key === 'ArrowLeft') {
             x -= step
         } else if (ev.key === 'ArrowRight') {
