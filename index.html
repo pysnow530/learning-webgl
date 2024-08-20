@@ -158,27 +158,6 @@
         1, -1, -1, 0, -1, 0,
     ])
 
-    const genGrid = (length, gap) => {
-        let lst = [
-            -length / 2, 0, 0,
-            length / 2, 0, 0,
-            0, 0, -length / 2,
-            0, 0, length / 2,
-        ]
-        for (let delta = gap; delta <= length / 2; delta += gap) {
-            lst = lst.concat([
-                -length / 2, 0, delta,
-                length / 2, 0, delta,
-                -length / 2, 0, -delta,
-                length / 2, 0, -delta,
-                delta, 0, -length / 2,
-                delta, 0, length / 2,
-                -delta, 0, -length / 2,
-                -delta, 0, length / 2,
-            ])
-        }
-        return lst
-    }
     const gridData = new Float32Array(genGrid(25, 1))
 
     const gridVertexBuffer = gl.createBuffer()
@@ -227,9 +206,6 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(gridProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
 
-        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_BaseColor'), [1, 0, 1])
-        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_LightColor'), [1, 1, 1])
-        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_AmbientColor'), [0.2, 0.2, 0.2])
         gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_MVP'), false, mvp.T())
         gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_Eye'), eye)
 
@@ -246,9 +222,6 @@
         gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 6, 0)
         gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Normal'), 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
 
-        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_BaseColor'), [1, 0, 1])
-        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_LightColor'), [1, 1, 1])
-        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_AmbientColor'), [0.2, 0.2, 0.2])
         gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_MVP'), false, mvp.T())
         gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
 
