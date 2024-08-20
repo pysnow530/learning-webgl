@@ -235,6 +235,7 @@
 
         // FIXME: 提示 GL_INVALID_OPERATION: Vertex buffer is not big enough for the draw call
         gl.drawArrays(gl.LINES, 0, gridData.length / 3)
+        gl.disableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
 
         // 绘制box
         gl.useProgram(boxProgram)
@@ -252,6 +253,8 @@
         gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
 
         gl.drawArrays(gl.TRIANGLES, 0, 36)
+        gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
+        gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
     }
 
     let x = 3
