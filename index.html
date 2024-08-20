@@ -15,11 +15,17 @@
         开启大气雾
         <input type="checkbox" id="fog" checked="checked" onchange="draw()" />
     </label>
+    <br/>
+    选择控制对象：
+    <input type="radio" id="camera" name="control" value="camera" checked>
+    <label for="camera">camera</label>
+    <input type="radio" id="light" name="control" value="light">
+    <label for="light">light</label>
     <p>
         NOTE:
     </p>
     <ol>
-        <li>方向键控制摄像机的x、y轴</li>
+        <li>方向键移动控制对象的x、y轴</li>
     </ol>
 </div>
 <script>
@@ -194,12 +200,22 @@
         const program = programs[i]
         gl.useProgram(program)
         gl.uniform3fv(gl.getUniformLocation(program, 'u_BaseColor'), [1, 0, 1])
-        gl.uniform3fv(gl.getUniformLocation(program, 'u_LightColor'), [1, 1, 1])
         gl.uniform3fv(gl.getUniformLocation(program, 'u_AmbientColor'), [0.2, 0.2, 0.2])
     }
 
-    let x = 3
-    let y = 3
+    let controlArguments = {
+        camera: {
+            x: 3,
+            y: 3,
+            z: -5
+        },
+        light: {
+            x: 1,
+            y: 1,
+            z: 1,
+        }
+    }
+
     const draw = () => {
         // MVP变换矩阵
         // ViewMatrix验证思路：
@@ -208,7 +224,7 @@
         // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
         // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
         // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
-        const eye = new Vec3(x, y, -5)
+        const eye = new Vec3(controlArguments.camera.x, controlArguments.camera.y, controlArguments.camera.z)
         const viewMatrix = Mat4.ViewMatrix(eye, new Vec3(0, 0, 0))
         // FIXED: near大于0时，颜色有干扰
         // FIXED: 相机aspect不是1:1时，正方体显示异常
@@ -232,6 +248,7 @@
         gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_Eye'), eye)
 
         gl.uniform1f(gl.getUniformLocation(gridProgram, 'u_WithFog'), withFog)
+        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_LightColor'), [controlArguments.light.x, controlArguments.light.y, controlArguments.light.z])
 
         // FIXME: 提示 GL_INVALID_OPERATION: Vertex buffer is not big enough for the draw call
         gl.drawArrays(gl.LINES, 0, gridData.length / 3)
@@ -250,6 +267,7 @@
         gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
 
         gl.uniform1f(gl.getUniformLocation(boxProgram, 'u_WithFog'), withFog)
+        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_LightColor'), [controlArguments.light.x, controlArguments.light.y, controlArguments.light.z])
 
         gl.drawArrays(gl.TRIANGLES, 0, 36)
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
@@ -263,14 +281,15 @@
         if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].indexOf(ev.key) === -1)
             return
 
+        const controlObject = document.querySelector('input[name=control]:checked').value
         if (ev.key === 'ArrowLeft') {
-            x -= step
+            controlArguments[controlObject].x -= step
         } else if (ev.key === 'ArrowRight') {
-            x += step
+            controlArguments[controlObject].x += step
         } else if (ev.key === 'ArrowDown') {
-            y -= step
+            controlArguments[controlObject].y -= step
         } else if (ev.key === 'ArrowUp') {
-            y += step
+            controlArguments[controlObject].y += step
         }
         draw()
     }
