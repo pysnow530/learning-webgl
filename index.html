@@ -12,9 +12,11 @@
 </div>
 <div style="float: left; margin-left: 20px">
     <label>
-        开启大气雾
+        开启大气雾（线性）
         <input type="checkbox" id="fog" checked="checked" onchange="draw()" />
     </label>
+    <label for="fogFar">能见度</label>
+    <input type="range" id="fogFar" name="fogFar" min="5" max="100" value="15" onchange="draw()" />
     <br/>
     选择控制对象：
     <input type="radio" id="camera" name="control" value="camera" checked>
@@ -66,6 +68,7 @@
         uniform vec3 u_Eye;
         uniform bool u_WithFog;
         uniform vec3 u_LightPosition;
+        uniform float u_FogFar;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
@@ -87,7 +90,7 @@
                 // 实现大气雾效果
                 fog.color = vec3(0.0, 0.0, 0.0);
                 fog.near = 5.0;
-                fog.far = 15.0;
+                fog.far = u_FogFar;
 
                 float fogDistance = distance(u_Eye, v_Position.xyz);
                 float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
@@ -107,6 +110,7 @@
         uniform vec3 u_Eye;
         uniform bool u_WithFog;
         uniform vec3 u_LightPosition;
+        uniform float u_FogFar;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
@@ -127,7 +131,7 @@
                 // 实现大气雾效果
                 fog.color = vec3(0.0, 0.0, 0.0);
                 fog.near = 5.0;
-                fog.far = 15.0;
+                fog.far = u_FogFar;
 
                 float fogDistance = distance(u_Eye, v_Position.xyz);
                 float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
@@ -247,6 +251,7 @@
 
             // 大气雾
             gl.uniform1f(gl.getUniformLocation(program, 'u_WithFog'), withFog)
+            gl.uniform1f(gl.getUniformLocation(program, 'u_FogFar'), document.querySelector('#fogFar').value)
 
             // 灯光
             gl.uniform3fv(gl.getUniformLocation(program, 'u_BaseColor'), colorTextToList(document.querySelector('#baseColor').value))
