@@ -6,14 +6,22 @@
     <script src="lib/structs.js"></script>
     <script src="lib/utils.js"></script>
 </head>
-<body style="background-color: gray">
-<canvas id="WebGL" width="1024" height="768"></canvas>
-<p>
-    NOTE:
-</p>
-<ol>
-    <li>方向键控制摄像机的x、y轴</li>
-</ol>
+<body>
+<div style="float: left">
+    <canvas id="WebGL" width="1024" height="768"></canvas>
+</div>
+<div style="float: left; margin-left: 20px">
+    <label>
+        开启大气雾
+        <input type="checkbox" id="fog" checked="checked" onchange="draw()" />
+    </label>
+    <p>
+        NOTE:
+    </p>
+    <ol>
+        <li>方向键控制摄像机的x、y轴</li>
+    </ol>
+</div>
 <script>
     const canvas = document.querySelector("#WebGL")
     const gl = canvas.getContext('webgl')
@@ -41,6 +49,7 @@
         uniform vec3 u_LightColor;
         uniform vec3 u_AmbientColor;
         uniform vec3 u_Eye;
+        uniform bool u_WithFog;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
@@ -58,14 +67,18 @@
             vec3 diffuse = u_AmbientColor * u_BaseColor;
             color = vec3(max(dot(lightDirection, normal), 0.0) * u_LightColor * u_BaseColor + diffuse);
 
-            // 实现大气雾效果
-            fog.color = vec3(0.0, 0.0, 0.0);
-            fog.near = 5.0;
-            fog.far = 15.0;
+            if (u_WithFog) {
+                // 实现大气雾效果
+                fog.color = vec3(0.0, 0.0, 0.0);
+                fog.near = 5.0;
+                fog.far = 15.0;
 
-            float fogDistance = distance(u_Eye, v_Position.xyz);
-            float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
-            gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
+                float fogDistance = distance(u_Eye, v_Position.xyz);
+                float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
+                gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
+            } else {
+                gl_FragColor = vec4(color, 1.0);
+            }
         }
         `
 
@@ -76,6 +89,7 @@
         uniform vec3 u_LightColor;
         uniform vec3 u_AmbientColor;
         uniform vec3 u_Eye;
+        uniform bool u_WithFog;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
@@ -92,14 +106,18 @@
             vec3 color;
             color = vec3(0.8, 0.8, 0.8);
 
-            // 实现大气雾效果
-            fog.color = vec3(0.0, 0.0, 0.0);
-            fog.near = 5.0;
-            fog.far = 15.0;
+            if (u_WithFog) {
+                // 实现大气雾效果
+                fog.color = vec3(0.0, 0.0, 0.0);
+                fog.near = 5.0;
+                fog.far = 15.0;
 
-            float fogDistance = distance(u_Eye, v_Position.xyz);
-            float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
-            gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
+                float fogDistance = distance(u_Eye, v_Position.xyz);
+                float fogFactor = min(1.0 - (fogDistance - fog.near) / (fog.far - fog.near), 1.0);
+                gl_FragColor = vec4(color * fogFactor + fog.color * (1.0 - fogFactor), 1.0);
+            } else {
+                gl_FragColor = vec4(color, 1.0);
+            }
         }
         `
 
@@ -180,7 +198,9 @@
         gl.uniform3fv(gl.getUniformLocation(program, 'u_AmbientColor'), [0.2, 0.2, 0.2])
     }
 
-    const draw = (x, y) => {
+    let x = 3
+    let y = 3
+    const draw = () => {
         // MVP变换矩阵
         // ViewMatrix验证思路：
         // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
@@ -195,6 +215,8 @@
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 75 / 180 * Math.PI, .1, 100)
         const mvp = projMatrix.mul(viewMatrix)
 
+        const withFog = document.querySelector('#fog').checked
+
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -208,6 +230,8 @@
 
         gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_MVP'), false, mvp.T())
         gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_Eye'), eye)
+
+        gl.uniform1f(gl.getUniformLocation(gridProgram, 'u_WithFog'), withFog)
 
         // FIXME: 提示 GL_INVALID_OPERATION: Vertex buffer is not big enough for the draw call
         gl.drawArrays(gl.LINES, 0, gridData.length / 3)
@@ -225,14 +249,14 @@
         gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_MVP'), false, mvp.T())
         gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
 
+        gl.uniform1f(gl.getUniformLocation(boxProgram, 'u_WithFog'), withFog)
+
         gl.drawArrays(gl.TRIANGLES, 0, 36)
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
     }
 
-    let x = 3
-    let y = 3
-    draw(x, y)
+    draw()
 
     document.onkeydown = (ev) => {
         const step = 0.5
@@ -248,7 +272,7 @@
         } else if (ev.key === 'ArrowUp') {
             y += step
         }
-        draw(x, y)
+        draw()
     }
 </script>
 </body>
