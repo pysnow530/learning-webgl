@@ -21,6 +21,15 @@
     <label for="camera">camera</label>
     <input type="radio" id="light" name="control" value="light">
     <label for="light">点光源</label>
+    <br/>
+    <label for="baseColor">物体表面颜色</label>
+    <input type="color" id="baseColor" name="baseColor" value="#ff00ff" onchange="draw()"/>
+    <br/>
+    <label for="lightColor">点光源颜色</label>
+    <input type="color" id="lightColor" name="lightColor" value="#ffffff" onchange="draw()"/>
+    <br/>
+    <label for="ambientColor">环境光颜色</label>
+    <input type="color" id="ambientColor" name="ambientColor" value="#333333" onchange="draw()"/>
     <p>
         NOTE:
     </p>
@@ -196,16 +205,6 @@
 
     const bytesPerElement = gridData.BYTES_PER_ELEMENT
 
-    // 灯光属性
-    const programs = [gridProgram, boxProgram]
-    for (let i = 0; i < programs.length; i++) {
-        const program = programs[i]
-        gl.useProgram(program)
-        gl.uniform3fv(gl.getUniformLocation(program, 'u_BaseColor'), [1, 0, 1])
-        gl.uniform3fv(gl.getUniformLocation(program, 'u_LightColor'), [1, 1, 1])
-        gl.uniform3fv(gl.getUniformLocation(program, 'u_AmbientColor'), [0.2, 0.2, 0.2])
-    }
-
     let controlArguments = {
         camera: {
             x: 3,
@@ -236,42 +235,49 @@
 
         const withFog = document.querySelector('#fog').checked
 
+        // 公共属性设置
+        const programs = [gridProgram, boxProgram]
+        for (let i = 0; i < programs.length; i++) {
+            const program = programs[i]
+            gl.useProgram(program)
+
+            // 转换矩阵
+            gl.uniformMatrix4fv(gl.getUniformLocation(program, 'u_MVP'), false, mvp.T())
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_Eye'), eye)
+
+            // 大气雾
+            gl.uniform1f(gl.getUniformLocation(program, 'u_WithFog'), withFog)
+
+            // 灯光
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_BaseColor'), colorTextToList(document.querySelector('#baseColor').value))
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_LightColor'), colorTextToList(document.querySelector('#lightColor').value))
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_AmbientColor'), colorTextToList(document.querySelector('#ambientColor').value))
+            gl.uniform3fv(gl.getUniformLocation(program, 'u_LightPosition'), [controlArguments.light.x, controlArguments.light.y, controlArguments.light.z])
+        }
+
         gl.enable(gl.DEPTH_TEST)
         gl.clearColor(0, 0, 0, 1)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
         // 绘制网格
         gl.useProgram(gridProgram)
-        gl.enableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
 
         gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(gridProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
 
-        gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_MVP'), false, mvp.T())
-        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_Eye'), eye)
-
-        gl.uniform1f(gl.getUniformLocation(gridProgram, 'u_WithFog'), withFog)
-        gl.uniform3fv(gl.getUniformLocation(gridProgram, 'u_LightPosition'), [controlArguments.light.x, controlArguments.light.y, controlArguments.light.z])
-
-        // FIXME: 提示 GL_INVALID_OPERATION: Vertex buffer is not big enough for the draw call
+        gl.enableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
         gl.drawArrays(gl.LINES, 0, gridData.length / 3)
         gl.disableVertexAttribArray(gl.getAttribLocation(gridProgram, 'a_Position'))
 
         // 绘制box
         gl.useProgram(boxProgram)
-        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
-        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
 
         gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 6, 0)
         gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Normal'), 3, gl.FLOAT, false, bytesPerElement * 6, bytesPerElement * 3)
 
-        gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_MVP'), false, mvp.T())
-        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_Eye'), eye)
-
-        gl.uniform1f(gl.getUniformLocation(boxProgram, 'u_WithFog'), withFog)
-        gl.uniform3fv(gl.getUniformLocation(boxProgram, 'u_LightPosition'), [controlArguments.light.x, controlArguments.light.y, controlArguments.light.z])
-
+        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
+        gl.enableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
         gl.drawArrays(gl.TRIANGLES, 0, 36)
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
