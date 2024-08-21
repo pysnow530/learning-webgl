@@ -24,7 +24,7 @@
     <input type="radio" id="light" name="control" value="light">
     <label for="light">点光源</label>
     <input type="radio" id="model" name="control" value="model">
-    <label for="model">盒子</label>
+    <label for="model">模型</label>
     <br/>
     <label for="baseColor">物体表面颜色</label>
     <input type="color" id="baseColor" name="baseColor" value="#ff00ff" onchange="draw()"/>
@@ -54,14 +54,15 @@
         attribute vec4 a_Position;
         attribute vec3 a_Normal;
 
-        uniform mat4 u_MVP;
+        uniform mat4 u_M;
+        uniform mat4 u_VP;
 
         varying vec4 v_Position;
         varying vec3 v_Normal;
 
         void main() {
-            gl_Position = u_MVP * a_Position;
-            v_Position = a_Position;
+            gl_Position = u_VP * u_M * a_Position;
+            v_Position = u_M * a_Position;
             v_Normal = a_Normal;
         }
         `
@@ -240,15 +241,15 @@
         // 1. (0, 0, 0), (0, 0, -1) 时，与变换前保持一致 [PASS]
         // 2. (0, .1, .1), (0, 0, 0) 时， 方块仍位于Canvas中心，形状为长方形 [FAILED]
         // 3. (.1, .1, .1), (0, 0, 0) 时，方块仍位于Canvas中心，形状为菱形（不标准菱形） [FAILED]
-        // const mvp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
-        // const mvp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
+        // const vp = Mat4.ViewMatrix(new Vec3(0, 0, 0), new Vec3(0, 0, -1))
+        // const vp = Mat4.ViewMatrix(new Vec3(0, .1, .1), new Vec3(0, 0, 0))
         const eye = new Vec3(controlArguments.camera.x, controlArguments.camera.y, controlArguments.camera.z)
         const modelMatrix = Mat4.TRANSLATE(controlArguments.model.x, controlArguments.model.y, controlArguments.model.z)
         const viewMatrix = Mat4.ViewMatrix(eye, new Vec3(0, 0, 0))
         // FIXED: near大于0时，颜色有干扰
         // FIXED: 相机aspect不是1:1时，正方体显示异常
         const projMatrix = Mat4.ProjMatrix(1024 / 768, 75 / 180 * Math.PI, .1, 100)
-        const mvp = projMatrix.mul(viewMatrix)
+        const vp = projMatrix.mul(viewMatrix)
 
         const withFog = document.querySelector('#fog').checked
 
@@ -278,7 +279,8 @@
 
         // 绘制网格
         gl.useProgram(gridProgram)
-        gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_MVP'), false, mvp.T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_M'), false, Mat4.ONE().T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(gridProgram, 'u_VP'), false, vp.T())
 
         gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(gridProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
@@ -290,8 +292,8 @@
         // 绘制box
         gl.useProgram(boxProgram)
         // 支持盒子位移
-        // FIXME: 光线计算有问题（基于位移前的位置）
-        gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_MVP'), false, mvp.mul(modelMatrix).T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_M'), false, modelMatrix.T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(boxProgram, 'u_VP'), false, vp.T())
 
         gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBuffer)
         gl.vertexAttribPointer(gl.getAttribLocation(boxProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 6, 0)
