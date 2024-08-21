@@ -153,6 +153,7 @@
     // 两个Program
     const gridProgram = createProgram(mvpVertexShader, gridFragmentShader)
     const boxProgram = createProgram(mvpVertexShader, boxFragmentShader)
+    const boxEdgeProgram = createProgram(mvpVertexShader, gridFragmentShader)
 
     // 顶点缓存数据
     const boxData = new Float32Array([
@@ -207,6 +208,15 @@
 
     const gridData = new Float32Array(genGrid(25, 1))
 
+    let boxEdgeData = []
+    for (let i = 0; i < boxData.length; i += 18) {
+        boxEdgeData = boxEdgeData.concat([
+            boxData[i], boxData[i+1], boxData[i+2], boxData[i+6], boxData[i+7], boxData[i+8],
+            boxData[i+6], boxData[i+7], boxData[i+8], boxData[i+12], boxData[i+13], boxData[i+14],
+            boxData[i+12], boxData[i+13], boxData[i+14], boxData[i], boxData[i+1], boxData[i+2],
+        ])
+    }
+
     const gridVertexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, gridVertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, gridData, gl.STATIC_DRAW)
@@ -214,6 +224,10 @@
     const boxVertexBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, boxData, gl.STATIC_DRAW)
+
+    const boxEdgeBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxEdgeBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxEdgeData), gl.STATIC_DRAW)
 
     const bytesPerElement = gridData.BYTES_PER_ELEMENT
 
@@ -254,7 +268,7 @@
         const withFog = document.querySelector('#fog').checked
 
         // 公共属性设置
-        const programs = [gridProgram, boxProgram]
+        const programs = [gridProgram, boxProgram, boxEdgeProgram]
         for (let i = 0; i < programs.length; i++) {
             const program = programs[i]
             gl.useProgram(program)
@@ -304,6 +318,18 @@
         gl.drawArrays(gl.TRIANGLES, 0, 36)
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Position'))
         gl.disableVertexAttribArray(gl.getAttribLocation(boxProgram, 'a_Normal'))
+
+        // 绘制box边
+        gl.useProgram(boxEdgeProgram)
+        gl.uniformMatrix4fv(gl.getUniformLocation(boxEdgeProgram, 'u_M'), false, modelMatrix.T())
+        gl.uniformMatrix4fv(gl.getUniformLocation(boxEdgeProgram, 'u_VP'), false, vp.T())
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, boxEdgeBuffer)
+        gl.vertexAttribPointer(gl.getAttribLocation(boxEdgeProgram, 'a_Position'), 3, gl.FLOAT, false, bytesPerElement * 3, 0)
+
+        gl.enableVertexAttribArray(gl.getAttribLocation(boxEdgeProgram, 'a_Position'))
+        gl.drawArrays(gl.LINES, 0, boxEdgeData.length / 3)
+        gl.disableVertexAttribArray(gl.getAttribLocation(boxEdgeProgram, 'a_Position'))
     }
 
     draw()
