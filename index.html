@@ -97,8 +97,14 @@
             vec3 lightDirection = normalize(u_LightPosition - v_Position.xyz);
             vec3 normal = normalize(v_Normal);
             vec3 color;
+            // phong model
             vec3 diffuse = u_AmbientColor * u_BaseColor;
-            color = vec3(max(dot(lightDirection, normal), 0.0) * u_LightColor * u_BaseColor + diffuse);
+            vec3 ambient = max(dot(lightDirection, normal), 0.0) * u_LightColor * u_BaseColor;
+            vec3 R = normalize(2.0 * dot(lightDirection, normal) * normal - lightDirection);
+            vec3 V = normalize(u_Eye - v_Position.xyz);
+            vec3 specular = pow(max(dot(R, V), 0.0), 30.0) * vec3(1.0, 1.0, 1.0);
+            color = vec3(ambient + diffuse + specular);
+            // color = vec3(dot(lightDirection, normal), 0.0, 0.0);
 
             if (u_WithFog) {
                 // 实现大气雾效果
@@ -244,9 +250,9 @@
             z: -5
         },
         light: {
-            x: 3,
-            y: 5,
-            z: -6,
+            x: -1,
+            y: 2,
+            z: 3,
         },
         model: {
             x: 0,
