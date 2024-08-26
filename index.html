@@ -274,7 +274,7 @@
         const viewMatrix = Mat4.ViewMatrix(eye, new Vec3(0, 0, 0))
         // FIXED: near大于0时，颜色有干扰
         // FIXED: 相机aspect不是1:1时，正方体显示异常
-        const projMatrix = Mat4.ProjMatrix(1024 / 768, 75 / 180 * Math.PI, .1, 100)
+        const projMatrix = Mat4.ProjMatrix(1024 / 768, 70 / 180 * Math.PI, .3, 100)
         const vp = projMatrix.mul(viewMatrix)
 
         const withFog = document.querySelector('#fog').checked
